@@ -1,0 +1,682 @@
+<template>
+  <div class="image-editor-container">
+    <!-- Preview Card -->
+    <PreviewCard
+      v-if="uiStore.render"
+      :zoom="uiStore.previewZoom"
+      :canvas-element="getHiddenCanvas()"
+      :is-checkout="uiStore.isCheckoutMode"
+      @toggle-zoom="uiStore.togglePreviewZoom()"
+    />
+
+    <!-- Checkout/Mockup Section -->
+    <CheckoutSection
+      v-if="['checkout', 'mockup'].includes(uiStore.visualization)"
+      :canvas-element="uiStore.render ? getHiddenCanvas() : undefined"
+      :is-checkout="uiStore.isCheckoutMode"
+      @add-to-cart="addToCart"
+      @go-back="uiStore.returnToDesign()"
+    />
+
+    <!-- Canvas Section -->
+    <CanvasSection
+      v-show="uiStore.isDesignMode || (uiStore.isMockupMode && $q.screen.gt.sm)"
+      ref="canvasSectionRef"
+      :width="canvasWidth"
+      :height="canvasHeight"
+          :images="images"
+          :texts="texts"
+          :selected-element-id="selectedElementId || undefined"
+          :locked-elements="lockedElements"
+      :is-dragging="isDragging"
+      :is-editing-text="textEditorStore.isEditingText"
+      :draw-tool-active="drawToolStore.isActive"
+      :brush-size="drawToolStore.brushSize"
+      :brush-color="drawToolStore.brushColor"
+      :hide-controls="uiStore.hideControls"
+      :hide-everything="uiStore.hideEverything"
+      :background-url="route.query.background_url as string | undefined"
+      :can-undo="canUndo"
+      :can-redo="canRedo"
+      :editing-content="textEditorStore.editingTextContent"
+      :editing-position="textEditorStore.editingTextPosition"
+      :editing-font-size="textEditorStore.editingTextFontSize"
+      :editing-font-family="textEditorStore.editingTextFontFamily"
+      :editing-color="textEditorStore.editingTextColor"
+      :editing-width="textEditorStore.editingTextWidth"
+      :editing-height="textEditorStore.editingTextHeight"
+          @element-select="selectElement"
+      @element-delete="handleDeleteElement"
+          @element-update="handleElementUpdate"
+          @edit-start="handleTextEditStart"
+          @edit-finish="finishTextEditing"
+      @drawing-update="drawToolStore.setCurrentDrawing($event)"
+          @stage-click="handleStageClick"
+      @texture-update="canvasOps.updateCupTexture()"
+          @change-image="handleChangeImage"
+          @edit-drawing="handleEditDrawing"
+          @format-text="handleFormatText"
+      @toggle-lock="editorStore.toggleLock($event)"
+      @duplicate="handleDuplicate"
+      @rotate-element="elementOps.rotateElement($event)"
+          @move-element="handleMoveElement"
+      @bring-to-front="handleBringToFront"
+      @send-to-back="handleSendToBack"
+          @font-change="handleFontChange"
+          @color-change="handleColorChange"
+      @undo="undo"
+      @redo="redo"
+          @content-change="handleQuillContentChange"
+          @finish-editing="finishTextEditing"
+          @cancel-editing="cancelTextEditing"
+      @editor-error="handleQuillError"
+      @update:brush-size="drawToolStore.setBrushSize($event)"
+      @update:brush-color="drawToolStore.setBrushColor($event)"
+      @clear-drawing="clearDrawing"
+      @finish-drawing="finishDrawing"
+    />
+
+    <!-- Visualization Toggle (Mobile) -->
+    <div
+      v-show="!uiStore.isCheckoutMode"
+      class="full-width justify-end flex q-pt-md"
+    >
+      <q-btn-toggle
+        v-if="$q.screen.lt.md"
+        v-model="uiStore.visualization"
+        style="border: 1px solid #027be3"
+        no-caps
+        rounded
+        unelevated
+        toggle-color="primary"
+        color="white"
+        text-color="primary"
+        :options="[
+          { label: 'Design', value: 'design' },
+          { label: 'Mockup', value: 'mockup' },
+        ]"
+      />
+    </div>
+
+    <!-- Image Toolbar -->
+    <image-toolbar
+      v-show="!uiStore.isCheckoutMode"
+      :class="{
+        'absolute-top-left q-mx-md q-my-xl': $q.screen.gt.sm,
+        'absolute-bottom': !$q.screen.gt.sm,
+      }"
+      style="z-index: 30"
+      :text-tool-active="textEditorStore.textToolActive"
+      :draw-tool-active="drawToolStore.isActive"
+      @upload="handleImageUpload"
+      @add-image="handleImageUrl"
+      @add-emoji="handleEmoji"
+      @checkout="handleCheckout"
+      @activate-text-tool="activateTextTool"
+      @activate-draw-tool="activateDrawTool"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import axios from 'axios'
+import PreviewCard from '~/components/sections/PreviewCard.vue'
+import CheckoutSection from '~/components/sections/CheckoutSection.vue'
+import CanvasSection from '~/components/sections/CanvasSection.vue'
+import ImageToolbar from '~/components/toolbars/ImageToolbar.vue'
+
+// Stores
+import { useEditorStore } from '~/store/editor'
+import { useUIStore } from '~/store/ui'
+import { useDrawToolStore } from '~/store/drawTool'
+import { useTextEditorStore } from '~/store/textEditor'
+
+// Composables
+import { useHistory } from '~/composables/useHistory'
+import { useCanvasOperations } from '~/composables/useCanvasOperations'
+import { useElementOperations } from '~/composables/useElementOperations'
+
+const $q = useQuasar()
+const route = useRoute()
+
+// Initialize stores
+const editorStore = useEditorStore()
+const uiStore = useUIStore()
+const drawToolStore = useDrawToolStore()
+const textEditorStore = useTextEditorStore()
+
+// Use composables
+const { saveState: saveHistoryState, undo, redo, canUndo, canRedo } = useHistory()
+const canvasOps = useCanvasOperations()
+const elementOps = useElementOperations()
+
+// Simple refs needed for canvas
+const isDragging = ref(false)
+const nextDrawingId = ref(1)
+
+// Refs from CanvasSection
+const canvasSectionRef = ref<any>(null)
+
+// Getter functions (declare before use in watch)
+const getHiddenCanvas = () => canvasSectionRef.value?.hiddenCanvas
+const getKonvaCanvasRef = () => canvasSectionRef.value?.konvaCanvasRef
+const getContainerRef = () => canvasSectionRef.value?.containerRef
+
+// Canvas dimensions (reactive)
+const canvasWidth = ref(952)
+const canvasHeight = ref(550)
+
+// Computed
+const images = computed(() => editorStore.elements.filter(el => el.type === 'image'))
+const texts = computed(() => editorStore.elements.filter(el => el.type === 'text' || el.type === 'emoji'))
+const selectedElementId = computed({
+  get: () => editorStore.selectedElementId,
+  set: (val) => editorStore.selectElement(val)
+})
+const lockedElements = computed(() => editorStore.lockedElements)
+
+// Update dimensions when container is available
+watch(() => getContainerRef(), (container) => {
+  if (container) {
+    canvasWidth.value = container.offsetWidth || 952
+    canvasHeight.value = container.offsetHeight || 550
+  }
+}, { immediate: true })
+
+// Update composable refs when canvas section is mounted
+watch(() => canvasSectionRef.value, (section) => {
+  if (section) {
+    canvasOps.containerRef.value = section.containerRef
+    canvasOps.konvaCanvasRef.value = section.konvaCanvasRef
+    canvasOps.hiddenCanvas.value = section.hiddenCanvas
+  }
+}, { immediate: true, flush: 'post' })
+
+// Save state wrapper
+const saveState = () => {
+  saveHistoryState()
+}
+
+const activateTextTool = () => {
+  textEditorStore.activateTextTool()
+  drawToolStore.deactivate()
+  editorStore.deselectAll()
+}
+
+const activateDrawTool = () => {
+  drawToolStore.activate()
+  textEditorStore.deactivateTextTool()
+  editorStore.deselectAll()
+  textEditorStore.finishEditing()
+}
+
+// ============================================
+// IMAGE OPERATIONS
+// ============================================
+
+const handleImageUrl = async (url: string) => {
+  elementOps.addImageFromUrl(url)
+  saveState()
+  await nextTick()
+  await nextTick()
+  canvasOps.updateCupTexture()
+}
+
+const handleImageUpload = async (file: File) => {
+  try {
+    await elementOps.addImageFromFile(file)
+    saveState()
+    await nextTick()
+    await nextTick()
+    canvasOps.updateCupTexture()
+  } catch (error) {
+    $q.notify({
+      message: 'Failed to upload image',
+      color: 'negative',
+    })
+  }
+}
+
+const handleChangeImage = (elementId: string) => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = (e: Event) => {
+    const file = (e.target as HTMLInputElement).files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        elementOps.changeImageSource(elementId, event.target?.result as string)
+        saveState()
+        canvasOps.updateCupTexture()
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+  input.click()
+}
+
+const handleEmoji = (emoji: any) => {
+  elementOps.addEmoji(emoji.i)
+  saveState()
+  canvasOps.updateCupTexture()
+}
+
+const handleTextEditStart = (elementId?: string) => {
+  const id = elementId || selectedElementId.value
+  if (!id) return
+  
+  handleFormatText(id)
+}
+
+const addNewText = (x: number, y: number) => {
+  const id = elementOps.addText(x, y)
+  
+  nextTick(() => {
+    nextTick(() => {
+      const canvasContainer = getContainerRef()
+      
+      let screenX = x
+      let screenY = y
+      
+      if (canvasContainer) {
+        const containerRect = canvasContainer.getBoundingClientRect()
+        screenX = containerRect.left + x
+        screenY = containerRect.top + y
+      }
+      
+      textEditorStore.startEditing({
+        elementId: id,
+        content: '',
+        position: { x: screenX, y: screenY },
+        fontSize: 16,
+        fontFamily: textEditorStore.selectedFont,
+        color: textEditorStore.selectedFontColor,
+        width: 400,
+        height: 100,
+      })
+    })
+  })
+  
+  saveState()
+}
+
+const handleQuillContentChange = (content: string) => {
+  textEditorStore.setEditingContent(content)
+  
+  if (selectedElementId.value) {
+    editorStore.updateElement(selectedElementId.value, { content })
+    canvasOps.debouncedTextureUpdate()
+  }
+}
+
+const finishTextEditing = () => {
+  if (selectedElementId.value && textEditorStore.editingTextContent) {
+    editorStore.updateElement(selectedElementId.value, { 
+      content: textEditorStore.editingTextContent 
+    })
+    saveState()
+    canvasOps.immediateTextureUpdate()
+  }
+  
+  textEditorStore.finishEditing()
+}
+
+const cancelTextEditing = () => {
+  if (selectedElementId.value) {
+    canvasOps.immediateTextureUpdate()
+  }
+  textEditorStore.cancelEditing()
+}
+
+const handleFormatText = (elementId: string) => {
+  const element = editorStore.elements.find(el => el.id === elementId)
+  if (!element || (element.type !== 'text' && element.type !== 'emoji')) return
+  
+  const text = element as any
+  
+  nextTick(() => {
+    const canvasContainer = getContainerRef()
+    if (!canvasContainer) return
+    
+    const containerRect = canvasContainer.getBoundingClientRect()
+    const currentElement = editorStore.elements.find(el => el.id === elementId)
+    const currentPosition = currentElement?.position || text.position
+    
+    const screenX = containerRect.left + currentPosition.x
+    const screenY = containerRect.top + currentPosition.y
+    
+    const textElement = currentElement as any
+    const fontSize = textElement?.fontSize || 16
+    const content = textElement?.content || 'Your text'
+    
+    textEditorStore.startEditing({
+      elementId: elementId,
+      content: textElement?.content || '',
+      position: { x: screenX, y: screenY },
+      fontSize: fontSize,
+      fontFamily: textElement?.font || 'Roboto',
+      color: textElement?.color || '#FF5CA0',
+      width: 300,
+      height: fontSize * 2,
+    })
+  })
+}
+
+const handleFontChange = (elementId: string, newFont: string) => {
+  elementOps.updateTextFont(elementId, newFont)
+  saveState()
+  canvasOps.updateCupTexture()
+}
+
+const handleColorChange = (elementId: string, newColor: string) => {
+  elementOps.updateTextColor(elementId, newColor)
+  saveState()
+  canvasOps.updateCupTexture()
+}
+
+const clearDrawing = () => {
+  const konvaRef = getKonvaCanvasRef()
+  const drawTool = konvaRef?.getDrawTool()
+  if (drawTool) {
+    drawTool.clearCanvas()
+  }
+  drawToolStore.clearCurrentDrawing()
+}
+
+const saveDrawing = async () => {
+  const konvaRef = getKonvaCanvasRef()
+  const drawTool = konvaRef?.getDrawTool()
+  if (!drawTool) return;
+
+  const data = drawTool.downloadDrawing();
+  if (!data.imageData) return;
+
+  const id = `draw-${nextDrawingId.value++}`;
+
+  const centerX = data.left + data.width / 2;
+  const centerY = data.top + data.height / 2;
+
+  // Add element through the store instead of pushing to computed property
+  editorStore.addElement({
+    id,
+    type: 'image',
+    src: data.imageData,
+    position: { x: centerX, y: centerY },
+    scale: 1,
+    rotation: 0,
+    isDrawing: true,
+    originalWidth: data.width,
+    originalHeight: data.height,
+  });
+
+  editorStore.selectElement(id);
+  saveState();
+
+  // Wait for DOM updates before updating texture
+  await nextTick();
+  await nextTick();
+  canvasOps.updateCupTexture();
+  clearDrawing();
+}
+
+const finishDrawing = async () => {
+  await saveDrawing()
+  drawToolStore.deactivate()
+}
+
+const handleEditDrawing = (elementId: string) => {
+  const element = editorStore.elements.find(el => el.id === elementId)
+  if (element && (element as any).isDrawing) {
+    editorStore.deleteElement(elementId)
+    saveState()
+    canvasOps.updateCupTexture()
+  }
+  
+  editorStore.deselectAll()
+  drawToolStore.activate()
+  textEditorStore.deactivateTextTool()
+  textEditorStore.finishEditing()
+}
+
+const selectElement = (id: string) => {
+  if (textEditorStore.isEditingText && textEditorStore.editingElementId !== id) {
+    finishTextEditing()
+  }
+  
+  editorStore.selectElement(id)
+  
+  const element = editorStore.elements.find(el => el.id === id)
+  if (element && element.type === 'text') {
+    const textEl = element as any
+    textEditorStore.setSelectedFont(textEl.font)
+    textEditorStore.setSelectedFontColor(textEl.color)
+  } else if (element && element.type === 'emoji') {
+    textEditorStore.setSelectedFont('Emoji')
+    textEditorStore.setSelectedFontColor('#000000')
+  }
+}
+
+const handleDeleteElement = (id: string) => {
+  if (elementOps.deleteElement(id)) {
+    saveState()
+    canvasOps.updateCupTexture()
+  }
+}
+
+const handleDuplicate = (elementId: string) => {
+  elementOps.duplicate(elementId)
+  saveState()
+  canvasOps.updateCupTexture()
+}
+
+const handleBringToFront = (elementId: string) => {
+  elementOps.bringToFront(elementId, getKonvaCanvasRef())
+  saveState()
+  nextTick(() => {
+    canvasOps.immediateTextureUpdate()
+  })
+}
+
+const handleSendToBack = (elementId: string) => {
+  elementOps.sendToBack(elementId, getKonvaCanvasRef())
+  saveState()
+  nextTick(() => {
+    canvasOps.immediateTextureUpdate()
+  })
+}
+
+const handleElementUpdate = (elementId: string, updatedElement: any) => {
+  if (editorStore.isElementLocked(elementId)) {
+    return
+  }
+  
+  const currentElement = editorStore.elements.find(el => el.id === elementId)
+  if (!currentElement) return
+  
+  const merged = { ...currentElement, ...updatedElement }
+  editorStore.updateElement(elementId, merged)
+  
+  if (textEditorStore.isEditingText && 
+      textEditorStore.editingElementId === elementId &&
+      (merged.type === 'text' || merged.type === 'emoji') && 
+      merged.position && 
+      (merged.position.x !== currentElement.position.x || merged.position.y !== currentElement.position.y)) {
+    
+    updateEditorPositionIfEditing(elementId)
+  }
+  
+  clearTimeout((saveState as any).timeout)
+  ;(saveState as any).timeout = setTimeout(() => {
+    saveState()
+  }, 300)
+  canvasOps.debouncedTextureUpdate()
+}
+
+const handleMoveElement = (elementId: string) => {
+  updateEditorPositionIfEditing(elementId)
+}
+
+const updateEditorPositionIfEditing = (elementId: string) => {
+  if (textEditorStore.isEditingText) {
+    const element = editorStore.elements.find(el => el.id === elementId)
+    
+    if (element && (element.type === 'text' || element.type === 'emoji')) {
+      const canvasContainer = getContainerRef()
+      
+      if (canvasContainer) {
+        const containerRect = canvasContainer.getBoundingClientRect()
+        const screenX = containerRect.left + element.position.x
+        const screenY = containerRect.top + element.position.y
+        
+        textEditorStore.setEditingPosition(screenX, screenY)
+      }
+    }
+  }
+}
+
+const handleStageClick = (e: any) => {
+  // Only cancel editing if clicking on empty stage (not on an element)
+  if (textEditorStore.isEditingText) {
+    const stage = e.target?.getStage?.()
+    if (!e.target || e.target === stage) {
+      finishTextEditing()
+      return
+    }
+  }
+
+  if (textEditorStore.textToolActive) {
+    const konvaRef = getKonvaCanvasRef()
+    const stage = konvaRef?.getStage()
+    if (stage) {
+      const pos = stage.getPointerPosition()
+      if (pos) {
+        addNewText(pos.x, pos.y)
+      } else {
+        addNewText(200, 100)
+      }
+      textEditorStore.deactivateTextTool()
+    }
+    return
+  }
+
+  editorStore.deselectAll()
+}
+
+const handleCheckout = async () => {
+  try {
+    uiStore.setVisualization('design')
+    await nextTick()
+    uiStore.prepareForExport()
+    await nextTick()
+    await canvasOps.updateCupTexture(true)
+    uiStore.showCheckout()
+  } finally {
+    uiStore.restoreAfterExport()
+  }
+}
+
+function dataURLtoFile(dataurl: string, filename: string) {
+  const arr = dataurl.split(',')
+  const mime = arr[0].match(/:(.*?);/)?.[1]
+  const bstr = atob(arr[arr.length - 1])
+  let n = bstr.length
+  const u8arr = new Uint8Array(n)
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n)
+  }
+  return new File([u8arr], filename, { type: mime })
+}
+
+const addToCart = async () => {
+  $q.loading.show()
+  
+  try {
+    const fileName = `${new Date().toISOString()}.png`
+    const { data: response } = await axios.post('/api/s3', { fileName })
+    
+    const options = {
+      headers: {
+        'Content-Type': 'image/png',
+      },
+    }
+    
+    const canvas = getHiddenCanvas()
+    if (!canvas) {
+      throw new Error('Canvas not ready')
+    }
+    
+    const file = dataURLtoFile(
+      canvas.toDataURL('image/png'),
+      fileName
+    )
+    
+    await axios.put(response, file, options)
+    
+    window.top?.postMessage(response.split('?')[0], '*')
+  } finally {
+    $q.loading.hide()
+  }
+}
+
+const handleQuillError = (error: any) => {
+  $q.notify({
+    message: error.message || 'Text editor error occurred',
+    color: 'negative',
+    timeout: 3000,
+  })
+}
+
+const handleKeyDown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && textEditorStore.isEditingText) {
+    textEditorStore.cancelEditing()
+  }
+  
+  if (
+    (e.key === 'Delete' || e.key === 'Backspace') &&
+    selectedElementId.value &&
+    !textEditorStore.isEditingText
+  ) {
+    handleDeleteElement(selectedElementId.value)
+  }
+  
+  if ((e.ctrlKey || e.metaKey) && !textEditorStore.isEditingText) {
+    if (e.key === 'z' && !e.shiftKey) {
+      e.preventDefault()
+      undo()
+    } else if ((e.key === 'z' && e.shiftKey) || e.key === 'y') {
+      e.preventDefault()
+      redo()
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+  setTimeout(() => canvasOps.updateCanvasDimensions(), 200)
+  setTimeout(() => saveState(), 500)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
+</script>
+
+<style scoped>
+.image-editor-container {
+  position: relative;
+    width: 100%;
+}
+
+.absolute-top-left {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.absolute-bottom {
+  position: absolute;
+  bottom: 0;
+}
+</style>
+
