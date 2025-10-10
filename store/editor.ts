@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { AnyElement, ViewMode, DrawToolOptions, TextToolOptions } from '~/types/editor'
 import { ELEMENT_CONFIG, DRAW_CONFIG } from '~/config/constants'
+import { generateElementId } from '~/utils/idGenerator'
 
 export const useEditorStore = defineStore('editor', {
   state: () => ({
@@ -97,7 +98,7 @@ export const useEditorStore = defineStore('editor', {
 
       const newElement: AnyElement = {
         ...element,
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: generateElementId(element.type),
         position: {
           x: element.position.x + 20,
           y: element.position.y + 20,

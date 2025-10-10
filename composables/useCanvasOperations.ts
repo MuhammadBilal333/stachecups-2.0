@@ -1,5 +1,7 @@
 import { ref, computed, nextTick } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
 import { PRODUCT_DIMENSIONS } from '~/config/products'
+import { EDITOR_CONFIG } from '~/config/constants'
 
 export function useCanvasOperations() {
   const route = useRoute()
@@ -102,16 +104,12 @@ export function useCanvasOperations() {
     }
   }
   
-  let textureUpdateTimeout: ReturnType<typeof setTimeout> | null = null
-  const debouncedTextureUpdate = () => {
-    if (textureUpdateTimeout) clearTimeout(textureUpdateTimeout)
-    textureUpdateTimeout = setTimeout(() => {
-      updateCupTexture()
-    }, 150)
-  }
+  // Use VueUse's useDebounceFn for better performance
+  const debouncedTextureUpdate = useDebounceFn(() => {
+    updateCupTexture()
+  }, EDITOR_CONFIG.TEXTURE_UPDATE_DEBOUNCE)
 
   const immediateTextureUpdate = () => {
-    if (textureUpdateTimeout) clearTimeout(textureUpdateTimeout)
     nextTick(() => {
       updateCupTexture()
     })

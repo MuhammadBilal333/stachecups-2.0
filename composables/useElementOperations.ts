@@ -2,6 +2,9 @@ import { useEditorStore } from '~/store/editor'
 import { useDrawToolStore } from '~/store/drawTool'
 import { useTextEditorStore } from '~/store/textEditor'
 import type { AnyElement } from '~/types/editor'
+import { generateImageId, generateTextId, generateEmojiId, generateDrawingId } from '~/utils/idGenerator'
+import { validateImageFile, fileToDataURL } from '~/utils/fileValidation'
+import { handleError, showSuccessNotification, ErrorType } from '~/utils/errorHandler'
 
 export function useElementOperations() {
   const editorStore = useEditorStore()
@@ -9,11 +12,9 @@ export function useElementOperations() {
   const textEditorStore = useTextEditorStore()
   const $q = useQuasar()
   
-  const nextImageId = ref(1)
-  
   const addImageFromUrl = (url: string) => {
-    const id = `img-${nextImageId.value++}`
-    
+    const id = generateImageId()
+
     editorStore.addElement({
       id,
       type: 'image',
@@ -24,39 +25,44 @@ export function useElementOperations() {
       width: 200,
       height: 200,
     } as AnyElement)
-    
+
     return id
   }
-  
-  const addImageFromFile = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      
-      reader.onload = (event) => {
-        const id = `img-${nextImageId.value++}`
-        
-        editorStore.addElement({
-          id,
-          type: 'image',
-          src: event.target?.result as string,
-          position: { x: 100, y: 100 },
-          scale: 1,
-          rotation: 0,
-          width: 200,
-          height: 200,
-        } as AnyElement)
-        
-        resolve(id)
-      }
-      
-      reader.onerror = () => reject(new Error('Failed to read file'))
-      reader.readAsDataURL(file)
-    })
+
+  const addImageFromFile = async (file: File): Promise<string> => {
+    // Validate the file
+    const validationResult = await validateImageFile(file)
+    if (!validationResult.valid && validationResult.error) {
+      handleError(validationResult.error, ErrorType.FILE_UPLOAD)
+      throw validationResult.error
+    }
+
+    try {
+      const dataURL = await fileToDataURL(file)
+      const id = generateImageId()
+
+      editorStore.addElement({
+        id,
+        type: 'image',
+        src: dataURL,
+        position: { x: 100, y: 100 },
+        scale: 1,
+        rotation: 0,
+        width: 200,
+        height: 200,
+      } as AnyElement)
+
+      showSuccessNotification('Image added successfully')
+      return id
+    } catch (error) {
+      handleError(error as Error, ErrorType.FILE_UPLOAD)
+      throw error
+    }
   }
   
   const addEmoji = (emoji: string) => {
-    const id = textEditorStore.getNextTextId()
-    
+    const id = generateEmojiId()
+
     editorStore.addElement({
       id,
       content: emoji,
@@ -69,13 +75,13 @@ export function useElementOperations() {
       height: 100,
       editable: false,
     } as AnyElement)
-    
+
     return id
   }
-  
+
   const addText = (x: number, y: number) => {
-    const id = textEditorStore.getNextTextId()
-    
+    const id = generateTextId()
+
     const newText: AnyElement = {
       id,
       content: '',
@@ -94,17 +100,17 @@ export function useElementOperations() {
       width: 300,
       height: 100,
     } as AnyElement
-    
+
     editorStore.addElement(newText)
     return id
   }
-  
+
   const addDrawing = (imageData: string, bounds: { left: number; top: number; width: number; height: number }) => {
-    const id = drawToolStore.getNextDrawingId()
-    
+    const id = generateDrawingId()
+
     const centerX = bounds.left + bounds.width / 2
     const centerY = bounds.top + bounds.height / 2
-    
+
     editorStore.addElement({
       id,
       type: 'image',
@@ -118,21 +124,23 @@ export function useElementOperations() {
       originalWidth: bounds.width,
       originalHeight: bounds.height,
     } as AnyElement)
-    
+
     return id
   }
-  
+
   const duplicate = (elementId: string) => {
     const element = editorStore.elements.find(el => el.id === elementId)
     if (!element) return null
-    
+
     let newId: string
     if (element.type === 'image') {
-      newId = `img-${nextImageId.value++}`
+      newId = generateImageId()
+    } else if (element.type === 'emoji') {
+      newId = generateEmojiId()
     } else {
-      newId = textEditorStore.getNextTextId()
+      newId = generateTextId()
     }
-    
+
     const duplicated = {
       ...element,
       id: newId,
@@ -141,10 +149,11 @@ export function useElementOperations() {
         y: element.position.y + 20,
       },
     }
-    
+
     editorStore.addElement(duplicated)
     editorStore.selectElement(newId)
-    
+
+    showSuccessNotification('Element duplicated successfully')
     return newId
   }
   

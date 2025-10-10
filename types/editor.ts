@@ -105,3 +105,52 @@ export interface S3UploadResult {
   url: string
   fileName: string
 }
+
+// Component Instance Types
+export interface KonvaCanvasInstance {
+  exportTexture: () => string | null
+  getStage: () => any
+  getStaticLayer: () => any
+  getDynamicLayer: () => any
+  getDrawLayer: () => any
+  getDrawTool: () => DrawToolInstance | null
+  scheduleBatchDraw: () => void
+  updateLoopedInstances: () => void
+}
+
+export interface DrawToolInstance {
+  clearCanvas: () => void
+  downloadDrawing: () => DrawingData
+}
+
+export interface DrawingData {
+  imageData: string
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+export interface CanvasSectionInstance {
+  hiddenCanvas: HTMLCanvasElement | null
+  konvaCanvasRef: KonvaCanvasInstance | null
+  containerRef: HTMLElement | null
+}
+
+// Text Editor Types
+export interface TextEditingConfig {
+  elementId: string
+  content: string
+  position: Position
+  fontSize: number
+  fontFamily: string
+  color: string
+  width: number
+  height: number
+}
+
+// Error Types
+export interface AppError extends Error {
+  code?: string
+  statusCode?: number
+}
