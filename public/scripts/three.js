@@ -24744,7 +24744,11 @@
 
 		function update() {
 
-			requestAnimationFrame( update );
+			if (typeof requestAnimationFrame !== 'undefined') {
+				requestAnimationFrame( update );
+			} else {
+				setTimeout( update, 1000 / 60 );
+			}
 
 			if ( video.readyState >= video.HAVE_CURRENT_DATA ) {
 

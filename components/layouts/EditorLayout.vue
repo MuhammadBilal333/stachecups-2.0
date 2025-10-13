@@ -1,25 +1,28 @@
 <template>
-  <div class="editor-layout p-6 min-h-screen bg-primaryBg">
+  <div class="editor-layout min-h-screen bg-primaryBg">
+    <!-- Top Bar -->
+    <slot name="top-bar" />
+
     <!-- Preview Card (Top Right) - Desktop Only -->
     <slot name="preview-card" />
-    
+
     <!-- Main Content Area -->
-    <div class="editor-content relative">
+    <div class="editor-content relative pt-16">
       <slot name="main-content" />
-     
+
       <slot />
     </div>
-    
+
     <!-- Visualization Toggle (Mobile) -->
     <slot name="visualization-toggle" />
-    
+
     <!-- Bottom Toolbar -->
     <slot name="bottom-toolbar" />
   </div>
 </template>
 
 <script setup>
-// Layout wrapper for the editor
+
 
 </script>
 
@@ -31,6 +34,14 @@
 
 .editor-content {
   position: relative;
+  margin-left: 80px; /* Sidebar width */
+}
+
+@media (max-width: 768px) {
+  .editor-content {
+    margin-left: 0;
+    padding-top: 0;
+  }
 }
 </style>
 

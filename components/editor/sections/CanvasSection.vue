@@ -111,9 +111,9 @@
 </template>
 
 <script setup>
-import KonvaCanvas from '~/components/canvas/KonvaCanvas.vue'
-import QuillTextEditor from '~/components/canvas/QuillTextEditor.vue'
-import DrawToolbar from '~/components/toolbars/DrawToolbar.vue'
+import KonvaCanvas from '~/components/editor/canvas/KonvaCanvas.vue'
+import QuillTextEditor from '~/components/editor/canvas/QuillTextEditor.vue'
+import DrawToolbar from '~/components/editor/sidebar/DrawToolbar.vue'
 
 const props = defineProps({
   width: { type: Number, default: 952 },
@@ -185,10 +185,6 @@ defineEmits([
 const containerRef = ref(null)
 const konvaCanvasRef = ref(null)
 const hiddenCanvas = ref(null)
-
-watch([containerRef, konvaCanvasRef, hiddenCanvas], ([container, konva, canvas]) => {
-  // Refs updated
-})
 
 defineExpose({
   containerRef,

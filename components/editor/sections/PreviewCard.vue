@@ -4,19 +4,18 @@
     class="absolute-top-right z-index-20 q-ma-md"
     :class="{
       'preview-card': !zoom,
-      'preview-card-zoom': zoom,
+      'rounded-lg w-[400px] h-[420px] overflow-hidden': zoom,
     }"
   >
-    <q-card-section class="relative-position">
-      <q-btn
-        icon="mdi-magnify"
-        square
-        outline
-        class="absolute-top-right q-ma-sm"
-        style="z-index: 2"
-        dense
+    <q-card-section class="relative-position bg-gradient-to-b from-[#9998eb] via-[#c7d3fa] to-[#8381f7] h-full">
+      <button class="absolute-top-right bg-black/20  size-8 flex items-center justify-center  rounded-md top-2 right-2 z-10 cursor-pointer text-white">
+        
+        <ZoomInIcon
+        icon="zoom-in"
+        class="size-6  text-white"
         @click="emit('toggle-zoom')"
-      />
+        />
+      </button>
       <cup-viewer
         :canvas-element="canvasElement"
         :key="`preview-${zoom}`"
@@ -26,7 +25,8 @@
 </template>
 
 <script setup>
-import CupViewer from '~/components/preview3D/CupViewer.vue'
+import CupViewer from '~/components/preview/CupViewer.vue'
+import { ZoomInIcon } from 'lucide-vue-next'
 
 const props = defineProps({
   zoom: Boolean,
@@ -49,10 +49,10 @@ const emit = defineEmits(['toggle-zoom'])
 }
 
 .preview-card-zoom {
-  width: 50vw;
-  height: 100vh;
+  width: 400px;
+  height: 400px;
   z-index: 10;
-  top: -20px;
+  top: 80px;
   position: fixed;
 }
 </style>

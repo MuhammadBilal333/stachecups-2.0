@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import ImageEditor from '~/components/ImageEditor.vue'
+import ImageEditor from '~/components/editor/ImageEditor.vue'
 import EditorLayout from '~/components/layouts/EditorLayout.vue'
 import 'quill/dist/quill.snow.css'
 

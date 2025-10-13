@@ -1,5 +1,19 @@
 <template>
   <div class="image-editor-container">
+    <!-- Top Navigation Bar -->
+    <TopBar
+      v-if="!uiStore.isCheckoutMode"
+      :can-undo="canUndo"
+      :can-redo="canRedo"
+      :zoom="canvasZoom"
+      @undo="undo"
+      @redo="redo"
+      @zoom-in="handleZoomIn"
+      @zoom-out="handleZoomOut"
+      @download="handleDownload"
+      @publish="handleCheckout"
+    />
+
     <!-- Preview Card -->
     <PreviewCard
       v-if="uiStore.render"
@@ -18,8 +32,9 @@
       @go-back="uiStore.returnToDesign()"
     />
 
-    <!-- Canvas Section -->
-    <CanvasSection
+ <div class="canvas-section-container flex flex-col items-center justify-center pt-20" :style="{ transform: `scale(${canvasZoom})`, transformOrigin: 'center', transition: 'transform 0.2s ease' }">
+     <!-- Canvas Section -->
+     <CanvasSection
       v-show="uiStore.isDesignMode || (uiStore.isMockupMode && $q.screen.gt.sm)"
       ref="canvasSectionRef"
       :width="canvasWidth"
@@ -75,6 +90,7 @@
       @clear-drawing="clearDrawing"
       @finish-drawing="finishDrawing"
     />
+ </div>
 
     <!-- Visualization Toggle (Mobile) -->
     <div
@@ -98,14 +114,9 @@
       />
     </div>
 
-    <!-- Image Toolbar -->
+    <!-- Image Toolbar (Sidebar) -->
     <image-toolbar
       v-show="!uiStore.isCheckoutMode"
-      :class="{
-        'absolute-top-left q-mx-md q-my-xl': $q.screen.gt.sm,
-        'absolute-bottom': !$q.screen.gt.sm,
-      }"
-      style="z-index: 30"
       :text-tool-active="textEditorStore.textToolActive"
       :draw-tool-active="drawToolStore.isActive"
       @upload="handleImageUpload"
@@ -120,10 +131,11 @@
 
 <script setup lang="ts">
 import axios from 'axios'
-import PreviewCard from '~/components/sections/PreviewCard.vue'
-import CheckoutSection from '~/components/sections/CheckoutSection.vue'
-import CanvasSection from '~/components/sections/CanvasSection.vue'
-import ImageToolbar from '~/components/toolbars/ImageToolbar.vue'
+import TopBar from '~/components/editor/TopBar.vue'
+import PreviewCard from '~/components/editor/sections/PreviewCard.vue'
+import CheckoutSection from '~/components/editor/sections/CheckoutSection.vue'
+import CanvasSection from '~/components/editor/sections/CanvasSection.vue'
+import ImageToolbar from '~/components/editor/sidebar/Sidebar.vue'
 
 // Stores
 import { useEditorStore } from '~/store/editor'
@@ -153,6 +165,7 @@ const elementOps = useElementOperations()
 // Simple refs needed for canvas
 const isDragging = ref(false)
 const nextDrawingId = ref(1)
+const canvasZoom = ref(1)
 
 // Refs from CanvasSection
 const canvasSectionRef = ref<any>(null)
@@ -348,7 +361,6 @@ const handleFormatText = (elementId: string) => {
     
     const textElement = currentElement as any
     const fontSize = textElement?.fontSize || 16
-    const content = textElement?.content || 'Your text'
     
     textEditorStore.startEditing({
       elementId: elementId,
@@ -405,6 +417,8 @@ const saveDrawing = async () => {
     position: { x: centerX, y: centerY },
     scale: 1,
     rotation: 0,
+    width: data.width,
+    height: data.height,
     isDrawing: true,
     originalWidth: data.width,
     originalHeight: data.height,
@@ -576,6 +590,37 @@ const handleCheckout = async () => {
   }
 }
 
+const handleDownload = async () => {
+  try {
+    const canvas = getHiddenCanvas()
+    if (!canvas) {
+      $q.notify({
+        message: 'Canvas not ready for download',
+        color: 'negative',
+      })
+      return
+    }
+
+    // Create a download link
+    const dataUrl = canvas.toDataURL('image/png')
+    const link = document.createElement('a')
+    link.download = `stachecups-design-${new Date().getTime()}.png`
+    link.href = dataUrl
+    link.click()
+
+    $q.notify({
+      message: 'Design downloaded successfully!',
+      color: 'positive',
+      icon: 'download',
+    })
+  } catch (error) {
+    $q.notify({
+      message: 'Failed to download design',
+      color: 'negative',
+    })
+  }
+}
+
 function dataURLtoFile(dataurl: string, filename: string) {
   const arr = dataurl.split(',')
   const mime = arr[0].match(/:(.*?);/)?.[1]
@@ -627,6 +672,14 @@ const handleQuillError = (error: any) => {
   })
 }
 
+const handleZoomIn = () => {
+  canvasZoom.value = Math.min(canvasZoom.value + 0.25, 2)
+}
+
+const handleZoomOut = () => {
+  canvasZoom.value = Math.max(canvasZoom.value - 0.25, 0.25)
+}
+
 const handleKeyDown = (e: KeyboardEvent) => {
   if (e.key === 'Escape' && textEditorStore.isEditingText) {
     textEditorStore.cancelEditing()
@@ -665,18 +718,8 @@ onUnmounted(() => {
 <style scoped>
 .image-editor-container {
   position: relative;
-    width: 100%;
-}
-
-.absolute-top-left {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.absolute-bottom {
-  position: absolute;
-  bottom: 0;
+  width: 100%;
+  min-height: 100vh;
 }
 </style>
 

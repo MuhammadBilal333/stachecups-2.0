@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-import CupViewer from '~/components/preview3D/CupViewer.vue'
+import CupViewer from '~/components/preview/CupViewer.vue'
 
 defineProps({
   canvasElement: {

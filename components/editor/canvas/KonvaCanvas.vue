@@ -12,6 +12,35 @@
       @click="handleStageClick"
       @contextmenu="handleStageContextMenu"
     >
+      <!-- Background Layer -->
+      <v-layer ref="backgroundLayer">
+        <v-rect
+          v-if="backgroundStore.backgroundType === 'solid'"
+          :config="{
+            x: 0,
+            y: 0,
+            width: stageConfig.width,
+            height: stageConfig.height,
+            fill: backgroundStore.solidColor,
+            opacity: backgroundStore.opacity,
+            listening: false
+          }"
+        />
+        <v-rect
+          v-if="backgroundStore.backgroundType === 'pattern' && backgroundStore.selectedPattern"
+          :config="{
+            x: 0,
+            y: 0,
+            width: stageConfig.width,
+            height: stageConfig.height,
+            fillPatternImage: patternImage,
+            fillPatternRepeat: 'repeat',
+            opacity: backgroundStore.opacity,
+            listening: false
+          }"
+        />
+      </v-layer>
+
       <v-layer ref="staticLayer">
         <template v-for="(image, index) in images" :key="`loop-img-${image.id}`">
           <DesignElement
@@ -164,11 +193,12 @@
 </template>
 
 <script setup>
-import FloatingToolbar from '~/components/toolbars/FloatingToolbar.vue'
-import HelperButtons from '~/components/canvas/HelperButtons.vue'
-import TextFormatToolbar from '~/components/toolbars/TextFormatToolbar.vue'
-import DesignElement from '~/components/canvas/DesignElement.vue'
-import DrawTool from '~/components/canvas/DrawTool.vue'
+import FloatingToolbar from '~/components/editor/sidebar/FloatingToolbar.vue'
+import HelperButtons from '~/components/editor/canvas/HelperButtons.vue'
+import TextFormatToolbar from '~/components/editor/sidebar/TextFormatToolbar.vue'
+import DesignElement from '~/components/editor/canvas/DesignElement.vue'
+import DrawTool from '~/components/editor/canvas/DrawTool.vue'
+import { useBackgroundStore } from '~/store/background'
 
 const props = defineProps({
   width: {
@@ -247,11 +277,15 @@ const emit = defineEmits([
   'move-element'
 ]);
 
+const backgroundStore = useBackgroundStore();
+
 const stage = ref(null);
 const staticLayer = ref(null);
 const dynamicLayer = ref(null);
 const drawLayer = ref(null);
 const drawToolRef = ref(null);
+const backgroundLayer = ref(null);
+const patternImage = ref(null);
 
 let batchDrawScheduled = false;
 let batchDrawFrameId = null;
@@ -339,16 +373,36 @@ const handleFormatText = (elementId) => {
 const scheduleBatchDraw = () => {
   if (batchDrawScheduled) return;
   
+  // Only run on client-side
+  if (typeof window === 'undefined' || typeof requestAnimationFrame === 'undefined') {
+    return;
+  }
+  
   batchDrawScheduled = true;
   batchDrawFrameId = requestAnimationFrame(() => {
+    const stageNode = stage.value?.getStage();
+    const backgroundLayerNode = backgroundLayer.value?.getNode();
+    const staticLayerNode = staticLayer.value?.getNode();
     const dynamicLayerNode = dynamicLayer.value?.getNode();
     const drawLayerNode = drawLayer.value?.getNode();
     
+    // Redraw all layers including background
+    if (backgroundLayerNode) {
+      backgroundLayerNode.batchDraw();
+    }
+    if (staticLayerNode) {
+      staticLayerNode.batchDraw();
+    }
     if (dynamicLayerNode) {
       dynamicLayerNode.batchDraw();
     }
     if (drawLayerNode) {
       drawLayerNode.batchDraw();
+    }
+    
+    // Force stage redraw to ensure all changes are rendered
+    if (stageNode) {
+      stageNode.batchDraw();
     }
     
     batchDrawScheduled = false;
@@ -357,7 +411,12 @@ const scheduleBatchDraw = () => {
 };
 
 const updateLoopedInstances = () => {
+  const backgroundLayerNode = backgroundLayer.value?.getNode();
   const staticLayerNode = staticLayer.value?.getNode();
+  
+  if (backgroundLayerNode) {
+    backgroundLayerNode.batchDraw();
+  }
   if (staticLayerNode) {
     staticLayerNode.batchDraw();
   }
@@ -503,12 +562,71 @@ const exportTexture = () => {
   }
 };
 const cleanupBatchDraw = () => {
-  if (batchDrawFrameId) {
+  if (batchDrawFrameId && typeof cancelAnimationFrame !== 'undefined') {
     cancelAnimationFrame(batchDrawFrameId);
     batchDrawFrameId = null;
   }
   batchDrawScheduled = false;
 };
+
+// Watch for pattern changes and load pattern image (Fixed reactivity)
+watch(() => backgroundStore.selectedPattern, (newPattern, oldPattern) => {
+  // Only run on client-side
+  if (typeof window === 'undefined') return;
+  
+  // Clear previous pattern immediately to prevent showing old pattern
+  patternImage.value = null;
+  scheduleBatchDraw();
+  emit('texture-update');
+  
+  if (newPattern && newPattern.preview) {
+    // Load new pattern image with proper error handling
+    const img = new Image();
+    
+    // Add a small delay to ensure the pattern preview is ready
+    setTimeout(() => {
+      img.onload = () => {
+        // Double-check this is still the current pattern to prevent race conditions
+        if (backgroundStore.selectedPattern?.id === newPattern.id) {
+          patternImage.value = img;
+          scheduleBatchDraw();
+          emit('texture-update');
+        }
+      };
+      img.onerror = () => {
+        patternImage.value = null;
+        scheduleBatchDraw();
+        emit('texture-update');
+      };
+      img.src = newPattern.preview;
+    }, 10);
+  }
+}, { immediate: true, deep: true });
+
+// Watch for solid color or background type changes (Fixed reactivity)
+watch([
+  () => backgroundStore.solidColor, 
+  () => backgroundStore.backgroundType, 
+  () => backgroundStore.opacity,
+  () => backgroundStore.selectedPattern?.id // Watch pattern ID for changes
+], () => {
+  scheduleBatchDraw();
+  emit('texture-update');
+}, { immediate: true, deep: true });
+
+// Listen for custom background change events
+onMounted(() => {
+  const handleBackgroundChange = () => {
+    scheduleBatchDraw();
+    emit('texture-update');
+  };
+  
+  window.addEventListener('background-changed', handleBackgroundChange);
+  
+  onUnmounted(() => {
+    window.removeEventListener('background-changed', handleBackgroundChange);
+  });
+});
 
 onUnmounted(() => {
   cleanupBatchDraw();

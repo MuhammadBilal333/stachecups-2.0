@@ -1,10 +1,7 @@
 <template>
   <div class="threejs-container">
     <div id="threejs" ref="threejsContainer"></div>
-    <div class="text-center">Drag to rotate</div>
-<!--    <div class="controls">-->
-<!--      <input type="range" id="rotate-range" min="0" max="360" v-model="rotationValue" @input="updateRotation" />-->
-<!--    </div>-->
+    <div class="text-center text-white">Drag to rotate</div>
   </div>
 </template>
 
