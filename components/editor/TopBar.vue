@@ -1,6 +1,5 @@
 <template>
   <div class="top-bar">
-    <!-- Left Section: Title & Actions -->
     <div class="top-bar-left">
       <div class="project-title-container">
         <input
@@ -22,7 +21,6 @@
       </div>
     </div>
 
-    <!-- Center Section: Zoom & View Controls -->
     <div class="top-bar-center">
       <div class="zoom-controls">
         <q-btn

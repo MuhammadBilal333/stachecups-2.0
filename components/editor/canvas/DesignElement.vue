@@ -12,11 +12,12 @@
     @transform="handleTransform"
     @transformend="handleTransformEnd"
   >
-    <v-image
-      v-if="elementType === 'image'"
-      ref="konvaImageRef"
-      :config="imageConfig"
-    />
+    <v-group v-if="elementType === 'image'" :config="{ clipFunc: hasFrame ? getClipFunc : undefined }">
+      <v-image
+        ref="konvaImageRef"
+        :config="imageConfig"
+      />
+    </v-group>
     
     <v-text
       v-else-if="props.element.type === 'text' && !isEditing"
@@ -119,6 +120,118 @@ let textUpdateTimeout = null;
 let pendingTextUpdate = null;
 
 const baseFontSize = 16;
+
+// Frame clipping support
+const hasFrame = computed(() => {
+  return props.element.frame && props.element.frame.shape && props.element.frame.shape !== 'none'
+});
+
+const getClipFunc = (ctx) => {
+  if (!props.element.frame || !hasFrame.value) return;
+  
+  const shape = props.element.frame.shape;
+  let width, height;
+  
+  if (props.element.isDrawing && props.element.originalWidth && props.element.originalHeight) {
+    width = props.element.originalWidth;
+    height = props.element.originalHeight;
+  } else {
+    width = originalImageSize.value.width;
+    height = originalImageSize.value.height;
+  }
+  
+  const centerX = 0;
+  const centerY = 0;
+  const radius = Math.min(width, height) / 2;
+  
+  ctx.beginPath();
+  
+  switch (shape) {
+    case 'circle':
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      break;
+      
+    case 'square':
+      ctx.rect(-width / 2, -height / 2, width, height);
+      break;
+      
+    case 'rounded-square':
+      const cornerRadius = Math.min(width, height) * 0.2;
+      const x = -width / 2;
+      const y = -height / 2;
+      ctx.moveTo(x + cornerRadius, y);
+      ctx.lineTo(x + width - cornerRadius, y);
+      ctx.arcTo(x + width, y, x + width, y + cornerRadius, cornerRadius);
+      ctx.lineTo(x + width, y + height - cornerRadius);
+      ctx.arcTo(x + width, y + height, x + width - cornerRadius, y + height, cornerRadius);
+      ctx.lineTo(x + cornerRadius, y + height);
+      ctx.arcTo(x, y + height, x, y + height - cornerRadius, cornerRadius);
+      ctx.lineTo(x, y + cornerRadius);
+      ctx.arcTo(x, y, x + cornerRadius, y, cornerRadius);
+      break;
+      
+    case 'heart':
+      const heartScale = radius / 50;
+      ctx.moveTo(0, -15 * heartScale);
+      ctx.bezierCurveTo(-20 * heartScale, -35 * heartScale, -40 * heartScale, -15 * heartScale, 0, 20 * heartScale);
+      ctx.bezierCurveTo(40 * heartScale, -15 * heartScale, 20 * heartScale, -35 * heartScale, 0, -15 * heartScale);
+      break;
+      
+    case 'star':
+      const starRadius = radius;
+      const innerRadius = starRadius * 0.5;
+      const points = 5;
+      for (let i = 0; i < points * 2; i++) {
+        const angle = (i * Math.PI) / points - Math.PI / 2;
+        const r = i % 2 === 0 ? starRadius : innerRadius;
+        const x = r * Math.cos(angle);
+        const y = r * Math.sin(angle);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      break;
+      
+    case 'hexagon':
+      const hexRadius = radius;
+      for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI) / 3;
+        const x = hexRadius * Math.cos(angle);
+        const y = hexRadius * Math.sin(angle);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      break;
+      
+    case 'octagon':
+      const octRadius = radius;
+      for (let i = 0; i < 8; i++) {
+        const angle = (i * Math.PI) / 4;
+        const x = octRadius * Math.cos(angle);
+        const y = octRadius * Math.sin(angle);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      break;
+      
+    case 'diamond':
+      ctx.moveTo(0, -radius);
+      ctx.lineTo(radius, 0);
+      ctx.lineTo(0, radius);
+      ctx.lineTo(-radius, 0);
+      ctx.closePath();
+      break;
+      
+    default:
+      // No clipping
+      ctx.rect(-width / 2, -height / 2, width, height);
+  }
+  
+  ctx.closePath();
+};
+
 const getElementBounds = () => {
   const scale = props.element.scale || 1;
   const fontSize = props.element.fontSize || 16;

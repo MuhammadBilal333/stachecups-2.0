@@ -25,6 +25,17 @@ export interface ImageElement extends DesignElement {
   isSticker?: boolean
   isDrawing?: boolean
   drawingData?: string
+  // Frame properties
+  frame?: {
+    id: string
+    shape: string
+  }
+  // Crop/zoom properties for image within frame
+  imageCrop?: {
+    x: number
+    y: number
+    scale: number
+  }
 }
 
 export interface TextElement extends DesignElement {

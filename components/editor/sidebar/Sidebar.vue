@@ -1,20 +1,16 @@
 <template>
   <div>
-    <!-- Desktop: Icon-Only Sidebar (Canva Style) -->
     <div
       v-if="!isMobile"
       class="fixed left-0 top-0 h-screen w-20 bg-white border-r border-gray-200 flex flex-col z-40 shadow-sm"
     >
-      <!-- Logo Header -->
       <div class="px-4 py-5 border-b border-gray-100 flex items-center justify-center">
         <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center">
           <span class="text-white font-bold text-base">SC</span>
         </div>
       </div>
 
-      <!-- Main Tools -->
       <div class="flex-1 px-2 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-        <!-- Stickers -->
         <div
           class="relative sidebar-item"
           @mouseenter="openMenu('stickers')"
@@ -30,7 +26,6 @@
             Stickers
           </q-tooltip>
 
-          <!-- Stickers Panel -->
           <div
             v-if="activeMenu === 'stickers'"
             class="fixed top-16 left-20 w-80 h-[calc(100vh-4rem)] bg-white border border-gray-200 shadow-xl z-50 flex flex-col rounded-r-lg overflow-hidden"

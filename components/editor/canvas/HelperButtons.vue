@@ -112,11 +112,14 @@
     const isSmallElement = props.elementSize.height < 20;
     const offset = isSmallElement ? 8 : 15;
     const top = props.elementPosition.y + (props.elementSize.height / 2) + offset
-    const left = props.elementPosition.x
+    const left = props.elementPosition.x + (props.elementSize.width / 2)
+    
+    // Ensure buttons don't appear at the very top of the canvas
+    const safeTop = Math.max(10, top)
     
     return {
       position: 'absolute',
-      top: `${top}px`,
+      top: `${safeTop}px`,
       left: `${left}px`,
       transform: 'translateX(-50%)',
       zIndex: 10,

@@ -1,5 +1,5 @@
 <template>
-  <div class="konva-canvas-wrapper">
+  <div class="konva-canvas-wrapper relative">
     <div v-if="!hideLabels" class="full-width full-height flex justify-between design-labels">
       <div class="label-front">Front</div>
       <q-separator vertical />
@@ -12,7 +12,6 @@
       @click="handleStageClick"
       @contextmenu="handleStageContextMenu"
     >
-      <!-- Background Layer -->
       <v-layer ref="backgroundLayer">
         <v-rect
           v-if="backgroundStore.backgroundType === 'solid'"
@@ -143,26 +142,29 @@
     </div>
 
     <FloatingToolbar
-    :visible="!!selectedElement && !props.isEditingText && selectedElementType === 'image'"
-  :element-position="selectedElementPosition"
-  :element-size="selectedElementSize"
-  :element-type="selectedElementType"
+      :visible="!!selectedElement && !props.isEditingText && selectedElementType === 'image'"
+      :element-position="selectedElementPosition"
+      :element-size="selectedElementSize"
+      :element-type="selectedElementType"
       :is-locked="props.selectedElementId ? props.lockedElements.has(props.selectedElementId) : false"
       :is-drawing="selectedElement?.isDrawing || false"
+      :has-frame="!!(selectedElement?.frame?.shape && selectedElement.frame.shape !== 'none')"
       @change-image="$emit('change-image', props.selectedElementId)"
       @edit-drawing="$emit('edit-drawing', props.selectedElementId)"
       @format-text="$emit('format-text', props.selectedElementId)"
       @toggle-lock="$emit('toggle-lock', props.selectedElementId)"
       @duplicate="$emit('duplicate', props.selectedElementId)"
+      @add-frame="$emit('add-frame', props.selectedElementId)"
+      @remove-frame="$emit('remove-frame', props.selectedElementId)"
       @delete="$emit('element-delete', props.selectedElementId)"
     />
 
     <TextFormatToolbar
-    :visible="!!selectedElement && !props.isEditingText && selectedElementType === 'text'"
-  :element-position="selectedElementPosition"
-  :element-size="selectedElementSize"
-  :current-font="selectedElement?.font || 'Roboto'"
-  :current-color="selectedElement?.color || '#FF5CA0'"
+      :visible="!!selectedElement && !props.isEditingText && selectedElementType === 'text'"
+      :element-position="selectedElementPosition"
+      :element-size="selectedElementSize"
+      :current-font="selectedElement?.font || 'Roboto'"
+      :current-color="selectedElement?.color || '#FF5CA0'"
       :current-font-size="selectedElement?.fontSize || 16"
       :is-locked="props.selectedElementId ? props.lockedElements.has(props.selectedElementId) : false"
       :is-bold="selectedElement?.bold || false"
@@ -201,45 +203,16 @@ import DrawTool from '~/components/editor/canvas/DrawTool.vue'
 import { useBackgroundStore } from '~/store/background'
 
 const props = defineProps({
-  width: {
-    type: Number,
-    required: true
-  },
-  height: {
-    type: Number,
-    required: true
-  },
-  images: {
-    type: Array,
-    default: () => []
-  },
-  texts: {
-    type: Array,
-    default: () => []
-  },
-  selectedElementId: {
-    type: String,
-    default: null
-  },
-  isDragging: {
-    type: Boolean,
-    default: false
-  },
-  isEditingText: {
-    type: Boolean,
-    default: false
-  },
-  drawToolActive: {
-    type: Boolean,
-    default: false
-  },
-  brushSize: {
-    type: Number,
-    default: 5
-  },
-  brushColor: {
-    type: String,
-    default: '#000000'
+  width: { type: Number, required: true },
+  height: { type: Number, required: true },
+  images: { type: Array, default: () => [] },
+  texts: { type: Array, default: () => [] },
+  selectedElementId: { type: String, default: null },
+  isDragging: { type: Boolean, default: false },
+  isEditingText: { type: Boolean, default: false },
+  drawToolActive: { type: Boolean, default: false },
+  brushSize: { type: Number, default: 5 },
+  brushColor: { type: String, default: '#000000'
   },
   hideLabels: {
     type: Boolean,
@@ -273,6 +246,8 @@ const emit = defineEmits([
   'format-text',
   'toggle-lock',
   'duplicate',
+  'add-frame',
+  'remove-frame',
   'rotate-element',
   'move-element'
 ]);

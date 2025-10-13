@@ -46,6 +46,8 @@
         @format-text="$emit('format-text', $event)"
         @toggle-lock="$emit('toggle-lock', $event)"
         @duplicate="$emit('duplicate', $event)"
+        @add-frame="$emit('add-frame', $event)"
+        @remove-frame="$emit('remove-frame', $event)"
         @rotate-element="$emit('rotate-element', $event)"
         @move-element="$emit('move-element', $event)"
         @font-change="(elementId, font) => $emit('font-change', elementId, font)"
@@ -168,6 +170,8 @@ defineEmits([
   'element-delete',
   'element-update',
   'duplicate',
+  'add-frame',
+  'remove-frame',
   'rotate-element',
   'move-element',
   'toggle-lock',
