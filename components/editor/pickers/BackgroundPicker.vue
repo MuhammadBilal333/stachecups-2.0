@@ -1,6 +1,5 @@
 <template>
   <div class="background-picker">
-    <!-- Background Type Tabs -->
     <div class="bg-tabs-container">
       <q-tabs
         v-model="backgroundType"
@@ -17,9 +16,7 @@
       </q-tabs>
     </div>
 
-    <!-- Content based on selected type -->
     <div class="bg-content">
-      <!-- None -->
       <div v-if="backgroundType === 'none'" class="empty-state">
         <div class="empty-icon-container">
           <q-icon name="layers_clear" size="48px" class="text-grey-4" />
@@ -30,18 +27,15 @@
         </div>
       </div>
 
-      <!-- Solid Color -->
       <div v-if="backgroundType === 'solid'" class="color-content">
         <ColorPicker />
       </div>
 
-      <!-- Pattern -->
       <div v-if="backgroundType === 'pattern'" class="pattern-content">
         <PatternPicker />
       </div>
     </div>
 
-    <!-- Clear Background Button -->
     <div v-if="backgroundType !== 'none'" class="clear-button-container">
       <q-separator class="q-my-sm" />
       <div class="q-px-md q-pb-md">
@@ -58,8 +52,7 @@
       </div>
     </div>
 
-    <!-- Color Variance Disclaimer Dialog -->
-    <q-dialog v-model="showDisclaimer" persistent>
+    <q-dialog v-model="backgroundStore.showVarianceDisclaimer" persistent>
       <q-card style="min-width: 350px">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">
@@ -112,17 +105,13 @@ const $q = useQuasar()
 
 const backgroundType = computed({
   get: () => backgroundStore.backgroundType,
-  set: (value) => backgroundStore.setBackgroundType(value)
-})
-
-const showDisclaimer = computed({
-  get: () => backgroundStore.showVarianceDisclaimer,
   set: (value) => {
-    if (!value) backgroundStore.dismissDisclaimer()
+    if (value !== backgroundStore.backgroundType) {
+      backgroundStore.setBackgroundType(value, true)
+    }
   }
 })
 
-// Current background chip style for header
 const currentBgStyle = computed(() => {
   const style: any = {
     width: '32px',
@@ -141,11 +130,9 @@ const currentBgStyle = computed(() => {
   }
 
   style.opacity = backgroundStore.opacity
-
   return style
 })
 
-// Clear background - INSTANT (no confirmation needed for better UX)
 const clearBackground = () => {
   backgroundStore.clearBackground()
   $q.notify({
@@ -157,7 +144,6 @@ const clearBackground = () => {
   })
 }
 
-// Dismiss disclaimer
 const dismissDisclaimer = () => {
   backgroundStore.dismissDisclaimer()
 }
@@ -250,7 +236,6 @@ const dismissDisclaimer = () => {
   background: white;
 }
 
-/* Better scrollbar styling */
 .bg-content::-webkit-scrollbar,
 .color-content::-webkit-scrollbar,
 .pattern-content::-webkit-scrollbar {

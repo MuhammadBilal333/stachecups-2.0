@@ -148,6 +148,7 @@
       :element-type="selectedElementType"
       :is-locked="props.selectedElementId ? props.lockedElements.has(props.selectedElementId) : false"
       :is-drawing="selectedElement?.isDrawing || false"
+      :is-sticker="selectedElement?.isSticker || false"
       :has-frame="!!(selectedElement?.frame?.shape && selectedElement.frame.shape !== 'none')"
       @change-image="$emit('change-image', props.selectedElementId)"
       @edit-drawing="$emit('edit-drawing', props.selectedElementId)"

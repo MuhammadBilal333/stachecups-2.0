@@ -13,12 +13,11 @@
       <div class="flex-1 px-2 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
         <div
           class="relative sidebar-item"
-          @mouseenter="openMenu('stickers')"
-          @mouseleave="scheduleClose"
         >
           <button
             class="w-full h-14 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-all duration-200"
             :class="{ 'bg-purple-50 text-purple-700': activeMenu === 'stickers' }"
+            @click="toggleMenu('stickers')"
           >
             <Sticker class="w-6 h-6" :class="activeMenu === 'stickers' ? 'text-purple-600' : 'text-gray-600'" :stroke-width="2" />
           </button>
@@ -29,8 +28,6 @@
           <div
             v-if="activeMenu === 'stickers'"
             class="fixed top-16 left-20 w-80 h-[calc(100vh-4rem)] bg-white border border-gray-200 shadow-xl z-50 flex flex-col rounded-r-lg overflow-hidden"
-            @mouseenter="cancelClose"
-            @mouseleave="scheduleClose"
           >
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
               <h3 class="text-lg font-semibold text-gray-900">Stickers</h3>
@@ -44,15 +41,13 @@
           </div>
         </div>
 
-        <!-- Elements/Emoji -->
         <div
           class="relative sidebar-item"
-          @mouseenter="openMenu('emoji')"
-          @mouseleave="scheduleClose"
         >
           <button
             class="w-full h-14 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-all duration-200"
             :class="{ 'bg-purple-50 text-purple-700': activeMenu === 'emoji' }"
+            @click="toggleMenu('emoji')"
           >
             <Smile class="w-6 h-6" :class="activeMenu === 'emoji' ? 'text-purple-600' : 'text-gray-600'" :stroke-width="2" />
           </button>
@@ -60,12 +55,9 @@
             Elements
           </q-tooltip>
 
-          <!-- Emoji Panel -->
           <div
             v-if="activeMenu === 'emoji'"
             class="fixed top-16 left-20 w-80 h-[calc(100vh-4rem)] bg-white border border-gray-200 shadow-xl z-50 flex flex-col rounded-r-lg"
-            @mouseenter="cancelClose"
-            @mouseleave="scheduleClose"
           >
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h3 class="text-lg font-semibold text-gray-900">Elements</h3>
@@ -79,15 +71,13 @@
           </div>
         </div>
 
-        <!-- Background -->
         <div
           class="relative sidebar-item"
-          @mouseenter="openMenu('background')"
-          @mouseleave="scheduleClose"
         >
           <button
             class="w-full h-14 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-all duration-200"
             :class="{ 'bg-purple-50 text-purple-700': activeMenu === 'background' }"
+            @click="toggleMenu('background')"
           >
             <Palette class="w-6 h-6" :class="activeMenu === 'background' ? 'text-purple-600' : 'text-gray-600'" :stroke-width="2" />
           </button>
@@ -95,12 +85,9 @@
             Background
           </q-tooltip>
 
-          <!-- Background Panel -->
           <div
             v-if="activeMenu === 'background'"
             class="fixed top-16 left-20 w-80 h-[calc(100vh-4rem)] bg-white border border-gray-200 shadow-xl z-50 flex flex-col rounded-r-lg overflow-hidden"
-            @mouseenter="cancelClose"
-            @mouseleave="scheduleClose"
           >
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
               <h3 class="text-lg font-semibold text-gray-900">Background</h3>
@@ -114,7 +101,6 @@
           </div>
         </div>
 
-        <!-- Text Tool -->
         <button
           class="w-full h-14 rounded-xl flex items-center justify-center transition-all duration-200"
           :class="textToolActive ? 'bg-purple-50 text-purple-700' : 'hover:bg-gray-100 text-gray-700'"
@@ -126,7 +112,6 @@
           </q-tooltip>
         </button>
 
-        <!-- Draw Tool -->
         <button
           class="w-full h-14 rounded-xl flex items-center justify-center transition-all duration-200"
           :class="drawToolActive ? 'bg-purple-50 text-purple-700' : 'hover:bg-gray-100 text-gray-700'"
@@ -138,7 +123,6 @@
           </q-tooltip>
         </button>
 
-        <!-- Upload -->
         <button
           class="w-full h-14 rounded-xl flex items-center justify-center hover:bg-gray-100 text-gray-700 transition-all duration-200"
           @click="fileInputRef?.pickFiles()"
@@ -150,11 +134,9 @@
         </button>
       </div>
 
-      <!-- Bottom Actions -->
       <div class="px-2 pb-6">
         <div class="h-px bg-gray-200 mb-4"></div>
 
-        <!-- Checkout Button -->
         <button
           class="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl py-3 hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center"
           @click="handleCheckout"
@@ -167,13 +149,11 @@
       </div>
     </div>
 
-    <!-- Mobile: Bottom Bar -->
     <div 
       v-else
       class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-40 shadow-lg"
     >
       <div class="flex items-center justify-around px-2 py-3">
-        <!-- Stickers -->
         <button
           class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all"
           :class="activeMenu === 'stickers' ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'"
@@ -183,7 +163,6 @@
           <span class="text-xs font-medium">Stickers</span>
         </button>
 
-        <!-- Emoji -->
         <button
           class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all"
           :class="activeMenu === 'emoji' ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'"
@@ -193,7 +172,6 @@
           <span class="text-xs font-medium">Elements</span>
         </button>
 
-        <!-- Background -->
         <button
           class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all"
           :class="activeMenu === 'background' ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'"
@@ -203,7 +181,6 @@
           <span class="text-xs font-medium">BG</span>
         </button>
 
-        <!-- Text -->
         <button
           class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all"
           :class="textToolActive ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'"
@@ -213,7 +190,6 @@
           <span class="text-xs font-medium">Text</span>
         </button>
 
-        <!-- Draw -->
         <button
           class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all"
           :class="drawToolActive ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'"
@@ -223,7 +199,6 @@
           <span class="text-xs font-medium">Draw</span>
         </button>
 
-        <!-- Upload -->
         <button
           class="flex flex-col items-center justify-center w-16 py-2 rounded-lg hover:bg-gray-50 transition-all"
           @click="fileInputRef?.pickFiles()"
@@ -232,7 +207,6 @@
           <span class="text-xs font-medium">Upload</span>
         </button>
 
-        <!-- Checkout -->
         <button
           class="flex flex-col items-center justify-center w-16 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white transition-all"
           @click="handleCheckout"
@@ -243,7 +217,6 @@
       </div>
     </div>
 
-    <!-- Mobile Modals -->
     <div v-if="isMobile && activeMenu" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end" @click="activeMenu = null">
       <div class="bg-white rounded-t-3xl w-full max-h-[80vh] overflow-auto p-6" @click.stop>
         <div class="flex items-center justify-between mb-6">
@@ -263,7 +236,6 @@
       </div>
     </div>
 
-    <!-- Hidden file input -->
     <q-file
       ref="fileInputRef"
       v-model="fileInput"
@@ -314,39 +286,22 @@ const emit = defineEmits(['upload', 'activate-text-tool', 'activate-draw-tool', 
 const fileInput = ref(null);
 const fileInputRef = ref(null);
 const activeMenu = ref(null);
-let closeTimeout = null;
 
 // Computed
 const isMobile = computed(() => $q.screen.lt.md);
 
 // Methods
-const openMenu = (menu) => {
-  if (closeTimeout) {
-    clearTimeout(closeTimeout);
-    closeTimeout = null;
-  }
-  activeMenu.value = menu;
-};
-
 const closeMenu = () => {
   activeMenu.value = null;
 };
 
-const scheduleClose = () => {
-  closeTimeout = setTimeout(() => {
-    activeMenu.value = null;
-  }, 150); // Small delay to allow moving to panel
-};
-
-const cancelClose = () => {
-  if (closeTimeout) {
-    clearTimeout(closeTimeout);
-    closeTimeout = null;
-  }
-};
-
 const toggleMenu = (menu) => {
-  activeMenu.value = activeMenu.value === menu ? null : menu;
+  // Simple toggle: if menu is already open, close it; otherwise open it
+  if (activeMenu.value === menu) {
+    activeMenu.value = null;
+  } else {
+    activeMenu.value = menu;
+  }
 };
 
 const activateTextTool = () => {
@@ -360,8 +315,6 @@ const activateDrawTool = () => {
 const handleFileSelected = (file) => {
   if (file) {
     emit('upload', file);
-
-    // Reset the input after emitting
     nextTick(() => {
       fileInput.value = null;
     });
@@ -384,7 +337,6 @@ const handleCheckout = () => {
 </script>
 
 <style scoped>
-/* Custom scrollbar for desktop sidebar */
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;
 }
@@ -398,7 +350,6 @@ const handleCheckout = () => {
   background: transparent;
 }
 
-/* Custom scrollbar for mobile modals */
 .overflow-auto::-webkit-scrollbar {
   width: 8px;
 }
@@ -417,13 +368,11 @@ const handleCheckout = () => {
   background: #555;
 }
 
-/* Smooth transitions */
 * {
   transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform, width;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Slide in animation for panels */
 @keyframes slide-in {
   from {
     transform: translateX(-100%);
@@ -438,8 +387,6 @@ const handleCheckout = () => {
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
-
-/* Emoji Picker Styling */
 .emoji-picker-wrapper :deep(.v3-emoji-picker) {
   border: none !important;
   box-shadow: none !important;

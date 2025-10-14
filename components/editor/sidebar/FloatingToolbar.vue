@@ -10,7 +10,7 @@
     </button>
     
     <button
-      v-if="elementType === 'image' && !isDrawing"
+      v-if="elementType === 'image' && !isDrawing && !isSticker"
       class="toolbar-btn"
       @click="$emit('change-image')"
       title="Change image"
@@ -19,7 +19,7 @@
     </button>
 
     <button
-      v-if="elementType === 'image' && !isDrawing && !hasFrame"
+      v-if="elementType === 'image' && !isDrawing && !isSticker && !hasFrame"
       class="toolbar-btn add-frame-btn"
       @click="$emit('add-frame')"
       title="Add frame"
@@ -28,7 +28,7 @@
     </button>
 
     <button
-      v-if="elementType === 'image' && !isDrawing && hasFrame"
+      v-if="elementType === 'image' && !isDrawing && !isSticker && hasFrame"
       class="toolbar-btn remove-frame-btn"
       @click="$emit('remove-frame')"
       title="Remove frame"

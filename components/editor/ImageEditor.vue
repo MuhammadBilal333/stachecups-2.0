@@ -235,11 +235,30 @@ const activateDrawTool = () => {
 // ============================================
 
 const handleImageUrl = async (url: string) => {
-  // Show frame selection modal before adding image
-  pendingImageUrl.value = url
-  pendingImageData.value = url
-  pendingImageFile.value = null
-  showFrameModal.value = true
+  // Stickers are added directly without frame selection
+  const imageId = elementOps.addImageFromUrl(url)
+  
+  const element = editorStore.elements.find(el => el.id === imageId)
+  if (element) {
+    // Mark as sticker so it doesn't get frame options
+    const updatedElement = {
+      ...element,
+      isSticker: true
+    }
+    editorStore.updateElement(imageId, updatedElement)
+  }
+  
+  saveState()
+  await nextTick()
+  await nextTick()
+  canvasOps.updateCupTexture()
+  
+  $q.notify({
+    message: 'Sticker added!',
+    color: 'positive',
+    icon: 'check_circle',
+    position: 'top',
+  })
 }
 
 const handleImageUpload = async (file: File) => {
@@ -333,7 +352,8 @@ const handleFrameSelectionFromModal = async (frame: any) => {
     saveState()
     await nextTick()
     await nextTick()
-    canvasOps.updateCupTexture()
+    // Use debounced texture update for frame changes to ensure proper rendering
+    canvasOps.debouncedTextureUpdate()
   } catch (error) {
     $q.notify({
       message: 'Failed to process frame selection',
@@ -424,7 +444,8 @@ const handleRemoveFrame = (elementId: string) => {
 
       editorStore.updateElement(elementId, updatedElement)
       saveState()
-      canvasOps.updateCupTexture()
+      // Use debounced texture update for frame removal to ensure proper rendering
+      canvasOps.debouncedTextureUpdate()
 
       $q.notify({
         message: 'Frame removed successfully',

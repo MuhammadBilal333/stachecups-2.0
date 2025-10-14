@@ -66,11 +66,33 @@ export function useCanvasOperations() {
     try {
       const stage = konvaCanvasRef.value.getStage()
       if (stage) {
+        // Temporarily hide transformers/selection rectangles
+        const transformers: any[] = []
+        stage.find('Transformer').forEach((transformer: any) => {
+          transformers.push(transformer)
+          transformer.hide()
+        })
+        
+        // Force a redraw without transformers
+        stage.batchDraw()
+        
+        // Add a small delay to ensure frame rendering is complete
+        await new Promise(resolve => setTimeout(resolve, 50))
+        
+        // Capture the stage without selection rectangles
         const konvaDataURL = stage.toDataURL({
           mimeType: 'image/png',
           quality: 1,
           pixelRatio: 2,
         })
+
+        // Restore transformers
+        transformers.forEach((transformer: any) => {
+          transformer.show()
+        })
+        
+        // Redraw with transformers visible again
+        stage.batchDraw()
 
         if (konvaDataURL && konvaDataURL !== 'data:,') {
           const img = new Image()

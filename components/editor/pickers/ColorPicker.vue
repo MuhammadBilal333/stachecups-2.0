@@ -278,7 +278,6 @@ const initializeColorValues = (color: string) => {
   }
 }
 
-// Handle color change from picker - INSTANT APPLY
 const handleColorChange = (color: any) => {
   if (color.hex) {
     currentColor.value = color.hex
@@ -287,24 +286,17 @@ const handleColorChange = (color: any) => {
   }
 }
 
-// Instant apply for Canva-like experience (Fixed opacity bug)
 const applyColorInstantly = (color: string) => {
-  // Set color immediately
   backgroundStore.solidColor = color
   backgroundStore.backgroundType = 'solid'
+  backgroundStore.setSolidColor(color, true)
   
-  // Also call store method for proper state management
-  backgroundStore.setSolidColor(color)
-  
-  // Force immediate canvas update
   nextTick(() => {
-    // Trigger canvas redraw
     const event = new CustomEvent('background-changed')
     window.dispatchEvent(event)
   })
 }
 
-// Update from HEX input - INSTANT APPLY
 const updateFromHex = (value: string) => {
   try {
     const hex = value.startsWith('#') ? value : `#${value}`
@@ -317,7 +309,6 @@ const updateFromHex = (value: string) => {
   }
 }
 
-// Update from RGB inputs - INSTANT APPLY
 const updateFromRgb = () => {
   try {
     const chromaColor = chroma.rgb(rgbValue.value.r, rgbValue.value.g, rgbValue.value.b)
@@ -338,7 +329,6 @@ const updateFromRgb = () => {
   }
 }
 
-// Update from CMYK inputs - INSTANT APPLY
 const updateFromCmyk = () => {
   try {
     const chromaColor = chroma.cmyk(
@@ -359,21 +349,18 @@ const updateFromCmyk = () => {
   }
 }
 
-// Select preset color - INSTANT APPLY (Fixed selection)
 const selectPresetColor = (color: string) => {
   currentColor.value = color
   initializeColorValues(color)
   applyColorInstantly(color)
 }
 
-// Select recent color - INSTANT APPLY (Fixed selection)
 const selectRecentColor = (color: string) => {
   currentColor.value = color
   initializeColorValues(color)
   applyColorInstantly(color)
 }
 
-// Copy color to clipboard
 const copyColor = (value: string) => {
   navigator.clipboard.writeText(value).then(() => {
     $q.notify({
@@ -385,8 +372,6 @@ const copyColor = (value: string) => {
     })
   })
 }
-
-// Watch for external color changes
 watch(() => backgroundStore.solidColor, (newColor) => {
   if (newColor !== currentColor.value) {
     currentColor.value = newColor
@@ -394,7 +379,6 @@ watch(() => backgroundStore.solidColor, (newColor) => {
   }
 })
 
-// Initialize on mount
 onMounted(() => {
   initializeColorValues(backgroundStore.solidColor)
 })
@@ -412,7 +396,6 @@ onMounted(() => {
   min-height: 60px;
 }
 
-/* Responsive preset color grid */
 .preset-colors-grid {
   display: grid;
   grid-template-columns: repeat(10, 1fr);

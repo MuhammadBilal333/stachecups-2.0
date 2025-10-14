@@ -20,18 +20,13 @@ export interface BackgroundState {
 
 export const useBackgroundStore = defineStore('background', {
   state: () => ({
-    // Current background
     backgroundType: 'none' as 'none' | 'solid' | 'pattern' | 'image',
     solidColor: '#FFFFFF',
     selectedPattern: null as Pattern | null,
     imageUrl: null as string | null,
     opacity: 1,
-
-    // Color picker state
     colorFormat: 'hex' as 'hex' | 'rgb' | 'cmyk',
     recentColors: [] as string[],
-    
-    // Pattern categories
     patternCategories: [
       'All',
       'Stripes',
@@ -43,11 +38,10 @@ export const useBackgroundStore = defineStore('background', {
     ],
     selectedCategory: 'All',
     searchQuery: '',
-
-    // UI state
     showColorPicker: false,
     showPatternPicker: false,
     showVarianceDisclaimer: false,
+    isUserInitiated: false,
   }),
 
   getters: {
@@ -62,8 +56,7 @@ export const useBackgroundStore = defineStore('background', {
     hasBackground: (state): boolean => {
       return state.backgroundType !== 'none'
     },
-
-    // Color conversion getters
+per
     colorAsHex: (state): string => {
       try {
         return chroma(state.solidColor).hex()
@@ -95,16 +88,13 @@ export const useBackgroundStore = defineStore('background', {
       }
     },
 
-    // Get filtered patterns (will be used when we load patterns)
     filteredPatterns: (state) => (patterns: Pattern[]) => {
       let filtered = patterns
 
-      // Filter by category
       if (state.selectedCategory !== 'All') {
         filtered = filtered.filter(p => p.category === state.selectedCategory)
       }
 
-      // Filter by search
       if (state.searchQuery.trim()) {
         const query = state.searchQuery.toLowerCase()
         filtered = filtered.filter(p => 
@@ -118,14 +108,15 @@ export const useBackgroundStore = defineStore('background', {
   },
 
   actions: {
-    // Background type actions
-    setBackgroundType(type: 'none' | 'solid' | 'pattern' | 'image') {
-      this.backgroundType = type
+    setBackgroundType(type: 'none' | 'solid' | 'pattern' | 'image', userInitiated = false) {
+      const isChangingToBackground = this.backgroundType === 'none' && type !== 'none'
       
-      // Show disclaimer when user first selects a background
-      if (type !== 'none' && !localStorage.getItem('background-disclaimer-shown')) {
+      this.backgroundType = type
+      this.isUserInitiated = userInitiated
+      
+      if (isChangingToBackground && userInitiated && !sessionStorage.getItem('background-disclaimer-shown')) {
         this.showVarianceDisclaimer = true
-        localStorage.setItem('background-disclaimer-shown', 'true')
+        sessionStorage.setItem('background-disclaimer-shown', 'true')
       }
     },
 
@@ -135,12 +126,10 @@ export const useBackgroundStore = defineStore('background', {
       this.imageUrl = null
     },
 
-    // Solid color actions
-    setSolidColor(color: string) {
+    setSolidColor(color: string, userInitiated = false) {
       try {
-        // Validate and normalize color
         this.solidColor = chroma(color).hex()
-        this.backgroundType = 'solid'
+        this.setBackgroundType('solid', userInitiated)
         this.addToRecentColors(this.solidColor)
       } catch (error) {
         console.error('Invalid color:', color)
@@ -149,14 +138,13 @@ export const useBackgroundStore = defineStore('background', {
 
     setColorFromRgb(r: number, g: number, b: number) {
       this.solidColor = chroma.rgb(r, g, b).hex()
-      this.backgroundType = 'solid'
+      this.setBackgroundType('solid', true)
       this.addToRecentColors(this.solidColor)
     },
 
     setColorFromCmyk(c: number, m: number, y: number, k: number) {
-      // Convert percentage back to 0-1 range
       this.solidColor = chroma.cmyk(c/100, m/100, y/100, k/100).hex()
-      this.backgroundType = 'solid'
+      this.setBackgroundType('solid', true)
       this.addToRecentColors(this.solidColor)
     },
 
@@ -165,18 +153,14 @@ export const useBackgroundStore = defineStore('background', {
     },
 
     addToRecentColors(color: string) {
-      // Remove if already exists
       this.recentColors = this.recentColors.filter(c => c !== color)
-      // Add to beginning
       this.recentColors.unshift(color)
-      // Keep only last 12
       this.recentColors = this.recentColors.slice(0, 12)
     },
 
-    // Pattern actions
     setPattern(pattern: Pattern) {
       this.selectedPattern = pattern
-      this.backgroundType = 'pattern'
+      this.setBackgroundType('pattern', true)
     },
 
     clearPattern() {
@@ -194,18 +178,15 @@ export const useBackgroundStore = defineStore('background', {
       this.searchQuery = query
     },
 
-    // Image background
     setImageBackground(url: string) {
       this.imageUrl = url
       this.backgroundType = 'image'
     },
 
-    // Opacity
     setOpacity(opacity: number) {
       this.opacity = Math.max(0, Math.min(1, opacity))
     },
 
-    // UI toggles
     toggleColorPicker() {
       this.showColorPicker = !this.showColorPicker
       if (this.showColorPicker) {
