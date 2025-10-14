@@ -56,7 +56,6 @@ export const useBackgroundStore = defineStore('background', {
     hasBackground: (state): boolean => {
       return state.backgroundType !== 'none'
     },
-per
     colorAsHex: (state): string => {
       try {
         return chroma(state.solidColor).hex()
