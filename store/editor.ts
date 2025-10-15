@@ -9,6 +9,7 @@ export const useEditorStore = defineStore('editor', {
     elements: [] as AnyElement[],
     selectedElementId: null as string | null,
     lockedElements: new Set<string>(),
+    hiddenElements: new Set<string>(),
 
     // Tools
     currentTool: null as 'select' | 'text' | 'draw' | null,
@@ -50,12 +51,25 @@ export const useEditorStore = defineStore('editor', {
       return (id: string) => state.lockedElements.has(id)
     },
 
+    isElementHidden: (state) => {
+      return (id: string) => state.hiddenElements.has(id)
+    },
+
+    visibleElements: (state): AnyElement[] => {
+      return state.elements.filter((el) => !state.hiddenElements.has(el.id))
+    },
+
     unlockedElements: (state): AnyElement[] => {
       return state.elements.filter((el) => !state.lockedElements.has(el.id))
     },
 
     hasElements: (state): boolean => {
       return state.elements.length > 0
+    },
+
+    // Layer panel organized elements (bottom to top, reverse for display)
+    layeredElements: (state): AnyElement[] => {
+      return [...state.elements].reverse()
     },
   },
 
@@ -138,6 +152,121 @@ export const useEditorStore = defineStore('editor', {
 
     unlockElement(id: string) {
       this.lockedElements.delete(id)
+    },
+
+    // Visibility
+    toggleVisibility(id: string) {
+      if (this.hiddenElements.has(id)) {
+        this.hiddenElements.delete(id)
+      } else {
+        this.hiddenElements.add(id)
+        // Deselect if hiding selected element
+        if (this.selectedElementId === id) {
+          this.selectedElementId = null
+        }
+      }
+    },
+
+    hideElement(id: string) {
+      this.hiddenElements.add(id)
+      if (this.selectedElementId === id) {
+        this.selectedElementId = null
+      }
+    },
+
+    showElement(id: string) {
+      this.hiddenElements.delete(id)
+    },
+
+    // Layer Reordering
+    moveElementToIndex(id: string, newIndex: number) {
+      const currentIndex = this.elements.findIndex((el) => el.id === id)
+      if (currentIndex === -1) return
+
+      const element = this.elements[currentIndex]
+      const newElements = [...this.elements]
+      newElements.splice(currentIndex, 1)
+      newElements.splice(newIndex, 0, element)
+      this.elements = newElements
+    },
+
+    bringToFront(id: string) {
+      const index = this.elements.findIndex((el) => el.id === id)
+      if (index === -1 || index === this.elements.length - 1) return
+
+      const element = this.elements[index]
+      const newElements = [...this.elements]
+      newElements.splice(index, 1)
+      newElements.push(element)
+      this.elements = newElements
+    },
+
+    sendToBack(id: string) {
+      const index = this.elements.findIndex((el) => el.id === id)
+      if (index === -1 || index === 0) return
+
+      const element = this.elements[index]
+      const newElements = [...this.elements]
+      newElements.splice(index, 1)
+      newElements.unshift(element)
+      this.elements = newElements
+    },
+
+    moveUp(id: string) {
+      const index = this.elements.findIndex((el) => el.id === id)
+      if (index === -1 || index === this.elements.length - 1) return
+
+      const element = this.elements[index]
+      const newElements = [...this.elements]
+      newElements.splice(index, 1)
+      newElements.splice(index + 1, 0, element)
+      this.elements = newElements
+    },
+
+    moveDown(id: string) {
+      const index = this.elements.findIndex((el) => el.id === id)
+      if (index === -1 || index === 0) return
+
+      const element = this.elements[index]
+      const newElements = [...this.elements]
+      newElements.splice(index, 1)
+      newElements.splice(index - 1, 0, element)
+      this.elements = newElements
+    },
+
+    // Alignment
+    alignElements(alignment: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') {
+      const selectedId = this.selectedElementId
+      if (!selectedId) return
+
+      const element = this.elements.find((el) => el.id === selectedId)
+      if (!element) return
+
+      const canvasWidth = this.canvasWidth
+      const canvasHeight = this.canvasHeight
+      const elementWidth = element.width * (element.scale || 1)
+      const elementHeight = element.height * (element.scale || 1)
+
+      switch (alignment) {
+        case 'left':
+          element.position.x = 0
+          break
+        case 'center':
+          element.position.x = (canvasWidth - elementWidth) / 2
+          break
+        case 'right':
+          element.position.x = canvasWidth - elementWidth
+          break
+        case 'top':
+          element.position.y = 0
+          break
+        case 'middle':
+          element.position.y = (canvasHeight - elementHeight) / 2
+          break
+        case 'bottom':
+          element.position.y = canvasHeight - elementHeight
+          break
+      }
     },
 
     // Tools

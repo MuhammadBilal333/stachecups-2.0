@@ -25,20 +25,24 @@ export function useCanvasOperations() {
   
   const containerWidth = computed(() => containerRef.value?.offsetWidth || 952)
   
-  const updateCanvasDimensions = () => {
-    const dimensions = PRODUCT_DIMENSIONS.find(
-      (it) => it.style === selectedStyle.value && it.name === selectedProduct.value
-    )
-    
-    if (!dimensions) return
-    
-    canvasWidth.value = dimensions.width
-    canvasHeight.value = dimensions.height
-    
+  const updateCanvasDimensions = (dimensions?: { width: number; height: number }) => {
+    let dims = dimensions
+
+    if (!dims) {
+      dims = PRODUCT_DIMENSIONS.find(
+        (it) => it.style === selectedStyle.value && it.name === selectedProduct.value
+      )
+    }
+
+    if (!dims) return
+
+    canvasWidth.value = dims.width
+    canvasHeight.value = dims.height
+
     if (containerRef.value) {
       containerRef.value.style.setProperty('--canvas-width', `${canvasWidth.value}mm`)
       containerRef.value.style.setProperty('--canvas-height', `${canvasHeight.value}mm`)
-      
+
       const pixelsPerMm = 3.779528
       containerRef.value.style.setProperty('--canvas-width-px', `${canvasWidth.value * pixelsPerMm}px`)
       containerRef.value.style.setProperty('--canvas-height-px', `${canvasHeight.value * pixelsPerMm}px`)

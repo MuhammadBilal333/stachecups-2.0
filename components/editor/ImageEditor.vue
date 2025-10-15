@@ -2,6 +2,7 @@
   <div class="image-editor-container">
     <TopBar
       v-if="!uiStore.isCheckoutMode"
+      v-model="designName"
       :can-undo="canUndo"
       :can-redo="canRedo"
       :zoom="canvasZoom"
@@ -11,6 +12,7 @@
       @zoom-out="handleZoomOut"
       @download="handleDownload"
       @publish="handleCheckout"
+      @share-design="handleShareDesign"
     />
 
     <PreviewCard
@@ -39,9 +41,11 @@
         :texts="texts"
         :selected-element-id="selectedElementId || undefined"
         :locked-elements="lockedElements"
+        :hidden-elements="editorStore.hiddenElements"
         :is-dragging="isDragging"
         :is-editing-text="textEditorStore.isEditingText"
         :draw-tool-active="drawToolStore.isActive"
+        :text-tool-active="textEditorStore.textToolActive"
         :brush-size="drawToolStore.brushSize"
         :brush-color="drawToolStore.brushColor"
         :hide-controls="uiStore.hideControls"
@@ -77,6 +81,7 @@
         @send-to-back="handleSendToBack"
         @font-change="handleFontChange"
         @color-change="handleColorChange"
+        @underline-change="handleUnderlineChange"
         @undo="undo"
         @redo="redo"
         @content-change="handleQuillContentChange"
@@ -109,6 +114,7 @@
     </div>
 
     <image-toolbar
+      ref="sidebarRef"
       v-show="!uiStore.isCheckoutMode"
       :text-tool-active="textEditorStore.textToolActive"
       :draw-tool-active="drawToolStore.isActive"
@@ -118,6 +124,32 @@
       @checkout="handleCheckout"
       @activate-text-tool="activateTextTool"
       @activate-draw-tool="activateDrawTool"
+      @open-advanced-text="() => {}" 
+      @add-monogram="handleAddMonogram"
+      @update-monogram="handleUpdateMonogram"
+      @switch-product="handleSwitchProduct"
+      @font-change="handleFontChange"
+      @font-size-change="handleFontSizeChange"
+      @color-change="handleColorChange"
+      @bold-change="handleBoldChange"
+      @italic-change="handleItalicChange"
+      @underline-change="handleUnderlineChange"
+      @stroke-toggle="handleStrokeToggle"
+      @stroke-color-change="handleStrokeColorChange"
+      @stroke-width-change="handleStrokeWidthChange"
+      @shadow-toggle="handleShadowToggle"
+      @shadow-color-change="handleShadowColorChange"
+      @shadow-blur-change="handleShadowBlurChange"
+      @shadow-offset-x-change="handleShadowOffsetXChange"
+      @shadow-offset-y-change="handleShadowOffsetYChange"
+      @shadow-opacity-change="handleShadowOpacityChange"
+      @engrave-toggle="handleEngraveToggle"
+      @letter-spacing-change="handleLetterSpacingChange"
+      @line-height-change="handleLineHeightChange"
+      @update:brush-size="handleBrushSizeChange"
+      @update:brush-color="handleBrushColorChange"
+      @clear-drawing="handleClearDrawing"
+      @finish-drawing="handleFinishDrawing"
     />
 
     <FrameSelectionModal
@@ -126,6 +158,32 @@
       @select="handleFrameSelectionFromModal"
       @cancel="handleCancelFrameSelection"
       @update:visible="showFrameModal = $event"
+    />
+
+    <!-- Advanced Text Panel removed - now integrated into sidebar -->
+
+    <!-- Monogram Picker -->
+    <EnhancedMonogramPicker
+      :show="monogramStore.showMonogramPicker"
+      :editing-element="monogramStore.editingMonogram"
+      @add="handleAddMonogram"
+      @update="handleUpdateMonogram"
+      @close="monogramStore.closeMonogramPicker()"
+    />
+
+    <!-- Product Switcher -->
+    <ProductSwitcher
+      :show="showProductSwitcher"
+      @close="showProductSwitcher = false"
+      @switched="handleProductSwitched"
+    />
+
+    <RestoreDesignModal
+      :visible="showRestoreModal"
+      :timestamp="restoreModalTimestamp"
+      @restore="handleRestoreDesign"
+      @discard="handleDiscardDesign"
+      @update:visible="showRestoreModal = $event"
     />
 
   </div>
@@ -139,14 +197,22 @@ import CheckoutSection from '~/components/editor/sections/CheckoutSection.vue'
 import CanvasSection from '~/components/editor/sections/CanvasSection.vue'
 import ImageToolbar from '~/components/editor/sidebar/Sidebar.vue'
 import FrameSelectionModal from '~/components/editor/pickers/FrameSelectionModal.vue'
+import MonogramPicker from '~/components/editor/pickers/MonogramPicker.vue'
+import EnhancedMonogramPicker from '~/components/editor/pickers/EnhancedMonogramPicker.vue'
+import ProductSwitcher from '~/components/editor/ProductSwitcher.vue'
+import RestoreDesignModal from '~/components/ui/RestoreDesignModal.vue'
 import { useEditorStore } from '~/store/editor'
 import { useUIStore } from '~/store/ui'
 import { useDrawToolStore } from '~/store/drawTool'
 import { useTextEditorStore } from '~/store/textEditor'
 import { useFramesStore } from '~/store/frames'
+import { useMonogramStore } from '~/store/monogram'
+import { useProductStore } from '~/store/product'
 import { useHistory } from '~/composables/useHistory'
 import { useCanvasOperations } from '~/composables/useCanvasOperations'
 import { useElementOperations } from '~/composables/useElementOperations'
+import { useDesignState } from '~/composables/useDesignState'
+import { useCart } from '~/composables/useCart'
 
 const $q = useQuasar()
 const route = useRoute()
@@ -156,15 +222,20 @@ const uiStore = useUIStore()
 const drawToolStore = useDrawToolStore()
 const textEditorStore = useTextEditorStore()
 const framesStore = useFramesStore()
+const monogramStore = useMonogramStore()
+const productStore = useProductStore()
 
 const { saveState: saveHistoryState, undo, redo, canUndo, canRedo } = useHistory()
 const canvasOps = useCanvasOperations()
 const elementOps = useElementOperations()
+const designState = useDesignState()
+const cart = useCart()
 
 // Simple refs needed for canvas
 const isDragging = ref(false)
 const nextDrawingId = ref(1)
 const canvasZoom = ref(1)
+const designName = ref('Untitled Design')
 
 // Frame selection modal state
 const showFrameModal = ref(false)
@@ -173,9 +244,15 @@ const pendingImageFile = ref<File | null>(null)
 const pendingImageUrl = ref<string | null>(null)
 const pendingElementId = ref<string | null>(null) // For adding frame to existing image
 
+// Product switcher modal state
+const showProductSwitcher = ref(false)
+const showRestoreModal = ref(false)
+const restoreModalTimestamp = ref(0)
+
 
 // Refs from CanvasSection
 const canvasSectionRef = ref<any>(null)
+const sidebarRef = ref<any>(null)
 
 // Getter functions (declare before use in watch)
 const getHiddenCanvas = () => canvasSectionRef.value?.hiddenCanvas
@@ -188,7 +265,7 @@ const canvasHeight = ref(550)
 
 // Computed
 const images = computed(() => editorStore.elements.filter(el => el.type === 'image'))
-const texts = computed(() => editorStore.elements.filter(el => el.type === 'text' || el.type === 'emoji'))
+const texts = computed(() => editorStore.elements.filter(el => el.type === 'text' || el.type === 'emoji' || el.type === 'monogram'))
 const selectedElementId = computed({
   get: () => editorStore.selectedElementId,
   set: (val) => editorStore.selectElement(val)
@@ -408,7 +485,6 @@ const handleEmoji = (emoji: any) => {
 }
 
 const handleAdjustImage = (elementId: string) => {
-  console.log('🎛️ Adjust Image triggered for:', elementId)
   // Image controls header removed - no action needed
 }
 
@@ -462,6 +538,64 @@ const handleRemoveFrame = (elementId: string) => {
   })
 }
 
+const handleRestoreDesign = async () => {
+  const savedDesign = designState.getSaved()
+  if (!savedDesign) return
+
+  const restored = await designState.restore(savedDesign)
+
+  if (restored) {
+    $q.notify({
+      message: 'Design restored successfully!',
+      color: 'positive',
+      icon: 'restore',
+      position: 'top',
+    })
+
+    setTimeout(() => {
+      canvasSectionRef.value?.konvaCanvasRef?.scheduleBatchDraw?.()
+    }, 100)
+
+    setTimeout(async () => {
+      await nextTick()
+      await nextTick()
+
+      const konva = canvasSectionRef.value?.konvaCanvasRef
+      if (konva) {
+        const stage = konva.getStage?.()
+        if (stage) {
+          stage.find('Layer').forEach((layer: any) => {
+            layer.batchDraw()
+          })
+          stage.batchDraw()
+        }
+      }
+    }, 500)
+
+    setTimeout(async () => {
+      await nextTick()
+      await canvasOps.updateCupTexture()
+    }, 1000)
+  } else {
+    $q.notify({
+      message: 'Failed to restore design. Starting fresh.',
+      color: 'warning',
+      icon: 'warning',
+      position: 'top',
+    })
+    designState.clear()
+  }
+}
+
+const handleDiscardDesign = () => {
+  designState.clear()
+  $q.notify({
+    message: 'Previous design discarded',
+    color: 'info',
+    icon: 'delete_sweep',
+    position: 'top',
+  })
+}
 
 const handleTextEditStart = (elementId?: string) => {
   const id = elementId || selectedElementId.value
@@ -563,16 +697,400 @@ const handleFormatText = (elementId: string) => {
   })
 }
 
-const handleFontChange = (elementId: string, newFont: string) => {
-  elementOps.updateTextFont(elementId, newFont)
-  saveState()
-  canvasOps.updateCupTexture()
+const handleFontChange = (elementIdOrFont: string, newFont?: string) => {
+  if (newFont !== undefined) {
+    elementOps.updateTextFont(elementIdOrFont, newFont)
+    saveState()
+    canvasOps.updateCupTexture()
+  } else {
+    if (selectedElementId.value) {
+      elementOps.updateTextFont(selectedElementId.value, elementIdOrFont)
+      saveState()
+      canvasOps.updateCupTexture()
+    }
+  }
 }
 
-const handleColorChange = (elementId: string, newColor: string) => {
-  elementOps.updateTextColor(elementId, newColor)
+const handleColorChange = (elementIdOrColor: string, newColor?: string) => {
+  if (newColor !== undefined) {
+    elementOps.updateTextColor(elementIdOrColor, newColor)
+    saveState()
+    canvasOps.updateCupTexture()
+  } else {
+    if (selectedElementId.value) {
+      elementOps.updateTextColor(selectedElementId.value, elementIdOrColor)
+      saveState()
+      canvasOps.updateCupTexture()
+    }
+  }
+}
+
+const handleFontSizeChange = (size: number) => {
+  if (selectedElementId.value) {
+    editorStore.updateElement(selectedElementId.value, { fontSize: size })
+    saveState()
+  }
+}
+
+const handleBoldChange = (isBold: boolean) => {
+  if (selectedElementId.value) {
+    editorStore.updateElement(selectedElementId.value, { bold: isBold })
+    saveState()
+  }
+}
+
+const handleItalicChange = (isItalic: boolean) => {
+  if (selectedElementId.value) {
+    editorStore.updateElement(selectedElementId.value, { italic: isItalic })
+    saveState()
+  }
+}
+
+const handleUnderlineChange = (isUnderline: boolean) => {
+  if (selectedElementId.value) {
+    editorStore.updateElement(selectedElementId.value, { underline: isUnderline })
+    saveState()
+  }
+}
+
+const handleStrokeToggle = (enabled: boolean) => {
+  if (selectedElementId.value) {
+    editorStore.updateElement(selectedElementId.value, { 
+      stroke: { 
+        ...(editorStore.elements.find(el => el.id === selectedElementId.value) as any)?.stroke,
+        enabled 
+      }
+    } as any)
+    saveState()
+  }
+}
+
+const handleStrokeColorChange = (color: string) => {
+  if (selectedElementId.value) {
+    const element = editorStore.elements.find(el => el.id === selectedElementId.value) as any
+    editorStore.updateElement(selectedElementId.value, { 
+      stroke: { 
+        ...element?.stroke,
+        color 
+      }
+    } as any)
+    saveState()
+  }
+}
+
+const handleStrokeWidthChange = (width: number) => {
+  if (selectedElementId.value) {
+    const element = editorStore.elements.find(el => el.id === selectedElementId.value) as any
+    editorStore.updateElement(selectedElementId.value, { 
+      stroke: { 
+        ...element?.stroke,
+        width 
+      }
+    } as any)
+    saveState()
+  }
+}
+
+const handleShadowToggle = (enabled: boolean) => {
+  if (selectedElementId.value) {
+    const element = editorStore.elements.find(el => el.id === selectedElementId.value) as any
+    editorStore.updateElement(selectedElementId.value, { 
+      shadow: { 
+        ...element?.shadow,
+        enabled 
+      }
+    } as any)
+    saveState()
+  }
+}
+
+const handleShadowColorChange = (color: string) => {
+  if (selectedElementId.value) {
+    const element = editorStore.elements.find(el => el.id === selectedElementId.value) as any
+    editorStore.updateElement(selectedElementId.value, { 
+      shadow: { 
+        ...element?.shadow,
+        color 
+      }
+    } as any)
+    saveState()
+  }
+}
+
+const handleShadowBlurChange = (blur: number) => {
+  if (selectedElementId.value) {
+    const element = editorStore.elements.find(el => el.id === selectedElementId.value) as any
+    editorStore.updateElement(selectedElementId.value, { 
+      shadow: { 
+        ...element?.shadow,
+        blur 
+      }
+    } as any)
+    saveState()
+  }
+}
+
+const handleShadowOffsetXChange = (offsetX: number) => {
+  if (selectedElementId.value) {
+    const element = editorStore.elements.find(el => el.id === selectedElementId.value) as any
+    editorStore.updateElement(selectedElementId.value, { 
+      shadow: { 
+        ...element?.shadow,
+        offsetX 
+      }
+    } as any)
+    saveState()
+  }
+}
+
+const handleShadowOffsetYChange = (offsetY: number) => {
+  if (selectedElementId.value) {
+    const element = editorStore.elements.find(el => el.id === selectedElementId.value) as any
+    editorStore.updateElement(selectedElementId.value, { 
+      shadow: { 
+        ...element?.shadow,
+        offsetY 
+      }
+    } as any)
+    saveState()
+  }
+}
+
+const handleShadowOpacityChange = (opacity: number) => {
+  if (selectedElementId.value) {
+    const element = editorStore.elements.find(el => el.id === selectedElementId.value) as any
+    editorStore.updateElement(selectedElementId.value, { 
+      shadow: { 
+        ...element?.shadow,
+        opacity 
+      }
+    } as any)
+    saveState()
+  }
+}
+
+const handleEngraveToggle = (enabled: boolean) => {
+  if (selectedElementId.value) {
+    editorStore.updateElement(selectedElementId.value, { engrave: enabled } as any)
+    saveState()
+  }
+}
+
+const handleLetterSpacingChange = (spacing: number) => {
+  if (selectedElementId.value) {
+    editorStore.updateElement(selectedElementId.value, { letterSpacing: spacing } as any)
+    saveState()
+  }
+}
+
+const handleLineHeightChange = (height: number) => {
+  if (selectedElementId.value) {
+    editorStore.updateElement(selectedElementId.value, { lineHeight: height } as any)
+    saveState()
+  }
+}
+
+// Advanced text styling handlers
+const applyAdvancedTextStyles = () => {
+  if (!selectedElementId.value) {
+    $q.notify({
+      message: 'Please select a text element first',
+      color: 'warning',
+      icon: 'warning',
+      position: 'top',
+    })
+    return
+  }
+
+  const element = editorStore.elements.find(el => el.id === selectedElementId.value)
+  if (!element || (element.type !== 'text' && element.type !== 'emoji' && element.type !== 'monogram')) {
+    $q.notify({
+      message: 'Please select a text element to apply styles',
+      color: 'warning',
+      icon: 'warning',
+      position: 'top',
+    })
+    return
+  }
+
+  const styles = textEditorStore.getCurrentTextStyles()
+
+  // Update element with new styles
+  editorStore.updateElement(selectedElementId.value, styles)
+
+  // Save and update canvas
   saveState()
   canvasOps.updateCupTexture()
+
+  // Advanced text panel removed - now in sidebar
+
+  $q.notify({
+    message: 'Text styles applied successfully!',
+    color: 'positive',
+    icon: 'check_circle',
+    position: 'top',
+  })
+  
+}
+
+const openTextPanel = () => {
+  if (sidebarRef.value) {
+    sidebarRef.value.openTextPanel()
+  }
+}
+
+const closeTextPanel = () => {
+  if (sidebarRef.value) {
+    sidebarRef.value.closeTextPanel()
+  }
+}
+
+watch(selectedElementId, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    const element = editorStore.elements.find(el => el.id === newId)
+    if (element) {
+      if ((element as any).type === 'monogram') {
+        // Open monogram panel for monogram elements
+        if (sidebarRef.value) {
+          sidebarRef.value.openMonogramPanel()
+        }
+      } else if (element.type === 'text' || element.type === 'emoji') {
+        // Open text panel for text and emoji elements
+        textEditorStore.applyStylesFromElement(element)
+        openTextPanel()
+      }
+    }
+  } else if (!newId) {
+    closeTextPanel()
+    // Close monogram panel when no element is selected
+    if (sidebarRef.value) {
+      sidebarRef.value.closeMonogramPanel()
+    }
+  }
+}, { immediate: true })
+
+const resetTextStyles = () => {
+  textEditorStore.reset()
+  $q.notify({
+    message: 'Text styles reset to defaults',
+    color: 'info',
+    icon: 'refresh',
+    position: 'top',
+  })
+}
+
+// Monogram handlers
+const handleAddMonogram = (config: any) => {
+  // Get center of canvas
+  const x = canvasWidth.value / 2
+  const y = canvasHeight.value / 2
+
+  // Create monogram element (treated as special text)
+  const id = elementOps.addText(x, y)
+
+  // Ensure content is not empty
+  const monogramContent = config.content || 'ABC' // Fallback content
+
+  // IMPORTANT: Use monogram-specific font, NOT regular text font
+  const monogramFont = config.font || 'monogram_kk' // Default to monogram font
+
+  // Update the text element with monogram properties
+  const updateData = {
+    content: monogramContent,
+    font: monogramFont, // Use special monogram font
+    fontSize: config.fontSize || 64, // Larger default for monograms
+    color: config.color || '#000000',
+    letterSpacing: config.spacing || 10,
+    type: 'monogram',
+    monogramTemplate: config.template,
+    monogramLetters: config.letters,
+    layoutStyle: config.layoutStyle,
+  }
+
+  editorStore.updateElement(id, updateData)
+
+  saveState()
+  canvasOps.updateCupTexture()
+
+  $q.notify({
+    message: `Monogram "${monogramContent}" added!`,
+    color: 'positive',
+    icon: 'mdi-alpha-m-circle',
+    position: 'top',
+  })
+}
+
+const handleUpdateMonogram = (config: any) => {
+  const editingId = selectedElementId.value
+
+  if (!editingId) {
+    $q.notify({
+      message: 'Please select a monogram to edit',
+      color: 'warning',
+      icon: 'warning',
+      position: 'top',
+    })
+    return
+  }
+
+  const element = editorStore.elements.find(el => el.id === editingId)
+  if (!element || (element as any).type !== 'monogram') {
+    $q.notify({
+      message: 'Selected element is not a monogram',
+      color: 'warning',
+      icon: 'warning',
+      position: 'top',
+    })
+    return
+  }
+
+  const monogramContent = config.content || 'ABC'
+  const monogramFont = config.font || 'monogram_kk'
+
+  // Update the existing monogram element
+  const updateData = {
+    content: monogramContent,
+    font: monogramFont,
+    fontSize: config.fontSize || 64,
+    color: config.color || '#000000',
+    letterSpacing: config.spacing || 10,
+    monogramTemplate: config.template,
+    monogramLetters: config.letters,
+    layoutStyle: config.layoutStyle,
+  }
+
+  editorStore.updateElement(editingId, updateData)
+
+  saveState()
+  canvasOps.updateCupTexture()
+
+  $q.notify({
+    message: `Monogram "${monogramContent}" updated!`,
+    color: 'positive',
+    icon: 'mdi-alpha-m-circle',
+    position: 'top',
+  })
+}
+
+const handleSwitchProduct = (product: any) => {
+  showProductSwitcher.value = true
+}
+
+const handleBrushSizeChange = (size: number) => {
+  drawToolStore.setBrushSize(size)
+}
+
+const handleBrushColorChange = (color: string) => {
+  drawToolStore.setBrushColor(color)
+}
+
+const handleClearDrawing = () => {
+  clearDrawing()
+}
+
+const handleFinishDrawing = async () => {
+  await saveDrawing()
+  drawToolStore.isActive = false
 }
 
 const clearDrawing = () => {
@@ -592,7 +1110,7 @@ const saveDrawing = async () => {
   const data = drawTool.downloadDrawing();
   if (!data.imageData) return;
 
-  const id = `draw-${nextDrawingId.value++}`;
+  const id = drawToolStore.getNextDrawingId();
 
   const centerX = data.left + data.width / 2;
   const centerY = data.top + data.height / 2;
@@ -789,10 +1307,13 @@ const handleDownload = async () => {
       return
     }
 
-    // Create a download link
     const dataUrl = canvas.toDataURL('image/png')
     const link = document.createElement('a')
-    link.download = `stachecups-design-${new Date().getTime()}.png`
+
+    const sanitizedName = designName.value.trim().replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'untitled-design'
+    const timestamp = new Date().toISOString().split('T')[0]
+    link.download = `${sanitizedName}-${timestamp}.png`
+
     link.href = dataUrl
     link.click()
 
@@ -823,32 +1344,137 @@ function dataURLtoFile(dataurl: string, filename: string) {
 
 const addToCart = async () => {
   $q.loading.show()
-  
+
   try {
+    const canvas = getHiddenCanvas()
+    if (!canvas) {
+      throw new Error('Canvas not ready')
+    }
+
+    // Validate design before adding to cart
+    const validation = cart.validateDesign()
+    if (!validation.valid) {
+      $q.notify({
+        message: validation.errors[0] || 'Design validation failed',
+        color: 'warning',
+        icon: 'warning',
+        position: 'top',
+      })
+      return
+    }
+
+    // Create cart item with JSON + PNG
+    const result = await cart.addToCart(canvas)
+
+    if (!result.success) {
+      $q.notify({
+        message: result.errors?.[0] || 'Failed to add to cart',
+        color: 'negative',
+        icon: 'error',
+        position: 'top',
+      })
+      return
+    }
+
+    // Upload PNG to S3
     const fileName = `${new Date().toISOString()}.png`
     const { data: response } = await axios.post('/api/s3', { fileName })
-    
+
     const options = {
       headers: {
         'Content-Type': 'image/png',
       },
     }
-    
-    const canvas = getHiddenCanvas()
-    if (!canvas) {
-      throw new Error('Canvas not ready')
-    }
-    
+
     const file = dataURLtoFile(
       canvas.toDataURL('image/png'),
       fileName
     )
-    
+
     await axios.put(response, file, options)
-    
-    window.top?.postMessage(response.split('?')[0], '*')
+
+    // Send cart item data to parent (including JSON layer stack)
+    window.top?.postMessage({
+      imageUrl: response.split('?')[0],
+      designData: result.cartItem?.designData,
+      metadata: result.cartItem?.metadata,
+    }, '*')
+
+    $q.notify({
+      message: 'Design added to cart!',
+      color: 'positive',
+      icon: 'check_circle',
+      position: 'top',
+    })
+  } catch (error) {
+    $q.notify({
+      message: 'Failed to add to cart',
+      color: 'negative',
+      icon: 'error',
+      position: 'top',
+    })
   } finally {
     $q.loading.hide()
+  }
+}
+
+const handleProductSwitched = (product: { type: string; size: string }) => {
+  saveState()
+  canvasOps.updateCupTexture()
+
+  $q.notify({
+    message: `Switched to ${product.type} ${product.size}`,
+    color: 'positive',
+    icon: 'check_circle',
+    position: 'top',
+  })
+}
+
+const handleShareDesign = async () => {
+  try {
+    const shareableLink = designState.generateShareLink()
+
+    if (!shareableLink) {
+      $q.notify({
+        message: 'Failed to generate shareable link',
+        color: 'negative',
+        icon: 'error',
+        position: 'top',
+      })
+      return
+    }
+
+    // Copy to clipboard
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(shareableLink)
+      $q.notify({
+        message: 'Shareable link copied to clipboard!',
+        color: 'positive',
+        icon: 'link',
+        position: 'top',
+        timeout: 3000,
+      })
+    } else {
+      // Fallback: show dialog with link
+      $q.dialog({
+        title: 'Share Design',
+        message: 'Copy this link to share your design:',
+        prompt: {
+          model: shareableLink,
+          type: 'text',
+          isValid: () => true,
+        },
+        cancel: false,
+        persistent: false,
+      })
+    }
+  } catch (error) {
+    $q.notify({
+      message: 'Failed to generate shareable link',
+      color: 'negative',
+      icon: 'error',
+      position: 'top',
+    })
   }
 }
 
@@ -892,14 +1518,51 @@ const handleKeyDown = (e: KeyboardEvent) => {
   }
 }
 
-onMounted(() => {
+// Handler for beforeunload - warn about unsaved changes
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (designState.hasUnsavedChanges.value && editorStore.elements.length > 0) {
+    e.preventDefault()
+    e.returnValue = 'You have unsaved changes. Are you sure you want to leave?'
+    return 'You have unsaved changes. Are you sure you want to leave?'
+  }
+}
+
+onMounted(async () => {
   window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('beforeunload', handleBeforeUnload)
+
   setTimeout(() => canvasOps.updateCanvasDimensions(), 200)
   setTimeout(() => saveState(), 500)
+
+  const { loadedFromUrl, hasAutosave } = designState.initialize()
+
+  if (loadedFromUrl) {
+    $q.notify({
+      message: 'Design loaded from shared link!',
+      color: 'positive',
+      icon: 'link',
+      position: 'top',
+    })
+
+    await nextTick()
+    await nextTick()
+    canvasOps.updateCupTexture()
+  } else if (hasAutosave) {
+    const savedDesign = designState.getSaved()
+
+    if (savedDesign) {
+      showRestoreModal.value = true
+      restoreModalTimestamp.value = savedDesign.timestamp
+    }
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+
+  // Stop autosave
+  designState.stopAutosave()
 })
 </script>
 

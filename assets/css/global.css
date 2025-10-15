@@ -1,20 +1,10 @@
-    root {
-      /* Primary Colors */
-      --color-primary: #1EADB0;
-      
-      /* Dark Colors */
-      --color-darkest: #100F30;
-      
-      /* Secondary Colors */
-      --color-secondary: #4B5574;
-      
-      /* Border Colors */
-      --color-dark-border: #868DAA;
-      --color-light-border: #DADEED;
-      
-      /* Background Colors */
-      --color-light-bg: #F4F4F7;
-    }
-  
+:root {
+  --color-primary: #1EADB0;
+  --color-darkest: #100F30;
+  --color-secondary: #4B5574;
+  --color-dark-border: #868DAA;
+  --color-light-border: #DADEED;
+  --color-light-bg: #F4F4F7;
+}
   
     

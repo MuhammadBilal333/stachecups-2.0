@@ -79,9 +79,11 @@ const editorStyle = computed(() => {
       width: `${props.width}px`,
       minHeight: `${props.height}px`,
       zIndex: 2000,
-      borderRadius: '4px',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-      border: '2px solid #3b82f6',
+      borderRadius: '12px',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      background: 'rgba(255, 255, 255, 0.95)',
+      backdropFilter: 'blur(20px)',
       overflow: 'hidden',
       resize: 'both',
       display: 'flex',
@@ -276,32 +278,39 @@ const handleKeyDown = (event) => {
 <style scoped>
 .quill-text-editor {
   pointer-events: auto;
-  background-color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 2px solid #3b82f6;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
   overflow: hidden;
   resize: both;
   min-width: 200px;
   min-height: 50px;
   max-height: 300px;
+  transition: all 0.2s ease;
+}
+
+.quill-text-editor:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
 }
 
 .quill-container {
   width: 100%;
   height: 100%;
-  background-color: white;
+  background: transparent;
   display: flex;
   flex-direction: column;
 }
 
 /* Override Quill styles for better integration */
 :deep(.ql-editor) {
-  padding: 12px;
+  padding: 16px;
   font-size: inherit;
-  line-height: 1.4;
+  line-height: 1.5;
   border: none;
-  background-color: white;
+  background: transparent;
   box-shadow: none;
   outline: none;
   flex: 1;
@@ -310,6 +319,7 @@ const handleKeyDown = (event) => {
   max-height: 250px;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  border-radius: 8px;
 }
 
 :deep(.ql-toolbar) {
@@ -353,23 +363,24 @@ const handleKeyDown = (event) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Resize handle styling */
+/* Modern resize handle styling */
 .quill-text-editor::-webkit-resizer {
-  background: #3b82f6;
-  border-radius: 2px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 4px;
   width: 16px;
   height: 16px;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .quill-text-editor::-webkit-resizer:hover {
-  background: #2563eb;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
   transform: scale(1.1);
   transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-/* Add visual indicator for resize capability */
+/* Modern visual indicator for resize capability */
 .quill-text-editor::after {
   content: '';
   position: absolute;
@@ -378,28 +389,32 @@ const handleKeyDown = (event) => {
   width: 0;
   height: 0;
   border-left: 8px solid transparent;
-  border-bottom: 8px solid #3b82f6;
+  border-bottom: 8px solid rgba(99, 102, 241, 0.6);
   pointer-events: none;
-  opacity: 0.7;
+  opacity: 0.8;
+  border-radius: 0 0 12px 0;
 }
 
 .editor-hint {
-  padding: 4px 8px;
-  font-size: 11px;
+  padding: 8px 12px;
+  font-size: 12px;
   color: #6b7280;
-  background: #f9fafb;
-  border-top: 1px solid #e5e7eb;
+  background: rgba(249, 250, 251, 0.8);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(229, 231, 235, 0.5);
   text-align: center;
+  border-radius: 0 0 12px 12px;
 }
 
 .editor-hint kbd {
   display: inline-block;
-  padding: 2px 6px;
-  font-size: 10px;
-  font-family: monospace;
-  background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 3px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  padding: 3px 8px;
+  font-size: 11px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(209, 213, 219, 0.5);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-weight: 500;
 }
 </style>

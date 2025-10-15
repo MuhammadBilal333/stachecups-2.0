@@ -27,12 +27,14 @@
         :is-dragging="isDragging"
         :is-editing-text="isEditingText"
         :draw-tool-active="drawToolActive"
+        :text-tool-active="textToolActive"
         :brush-size="brushSize"
         :brush-color="brushColor"
         :hide-labels="hideEverything"
         :show-looped-elements="!hideControls"
         :background-url="backgroundUrl"
         :locked-elements="lockedElements"
+        :hidden-elements="hiddenElements"
         @element-select="$emit('element-select', $event)"
         @element-delete="$emit('element-delete', $event)"
         @element-update="(elementId, updatedElement) => $emit('element-update', elementId, updatedElement)"
@@ -52,6 +54,7 @@
         @move-element="$emit('move-element', $event)"
         @font-change="(elementId, font) => $emit('font-change', elementId, font)"
         @color-change="(elementId, color) => $emit('color-change', elementId, color)"
+        @underline-change="$emit('underline-change', $event)"
       />
 
       <QuillTextEditor
@@ -70,41 +73,6 @@
         @error="$emit('editor-error', $event)"
       />
 
-      <div v-if="!hideControls" class="undo-redo-controls">
-        <q-btn-group rounded>
-          <q-btn
-            icon="undo"
-            :disable="!canUndo"
-            size="sm"
-            color="primary"
-            outline
-            @click="$emit('undo')"
-          >
-            <q-tooltip>Undo (Ctrl+Z)</q-tooltip>
-          </q-btn>
-          <q-btn
-            icon="redo"
-            :disable="!canRedo"
-            size="sm"
-            color="primary"
-            outline
-            @click="$emit('redo')"
-          >
-            <q-tooltip>Redo (Ctrl+Y)</q-tooltip>
-          </q-btn>
-        </q-btn-group>
-      </div>
-
-      <div v-if="drawToolActive && !hideControls" class="drawing-toolbar">
-        <DrawToolbar
-          :brush-size="brushSize"
-          :brush-color="brushColor"
-          @update:brush-size="$emit('update:brush-size', $event)"
-          @update:brush-color="$emit('update:brush-color', $event)"
-          @clear="$emit('clear-drawing')"
-          @done="$emit('finish-drawing')"
-        />
-      </div>
     </div>
 
     <!-- Hidden canvas for 3D texture generation -->
@@ -115,7 +83,6 @@
 <script setup>
 import KonvaCanvas from '~/components/editor/canvas/KonvaCanvas.vue'
 import QuillTextEditor from '~/components/editor/canvas/QuillTextEditor.vue'
-import DrawToolbar from '~/components/editor/sidebar/DrawToolbar.vue'
 
 const props = defineProps({
   width: { type: Number, default: 952 },
@@ -124,9 +91,11 @@ const props = defineProps({
   texts: { type: Array, default: () => [] },
   selectedElementId: { type: String, default: null },
   lockedElements: { type: Set, default: () => new Set() },
+  hiddenElements: { type: Set, default: () => new Set() },
   isDragging: { type: Boolean, default: false },
   isEditingText: { type: Boolean, default: false },
   drawToolActive: { type: Boolean, default: false },
+  textToolActive: { type: Boolean, default: false },
   brushSize: { type: Number, default: 5 },
   brushColor: { type: String, default: '#000000' },
   hideControls: { type: Boolean, default: false },
@@ -178,6 +147,7 @@ defineEmits([
   'change-image',
   'font-change',
   'color-change',
+  'underline-change',
   'bring-to-front',
   'send-to-back',
   

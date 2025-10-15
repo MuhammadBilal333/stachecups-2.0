@@ -59,31 +59,6 @@
       </button>
     </div>
 
-    <!-- Font Controls Group -->
-    <div class="toolbar-group">
-    
-
-      <!-- Font Selector -->
-      <div class="font-selector">
-        <select
-          :value="currentFont"
-          @change="handleFontChange"
-          class="font-select"
-          title="Select font"
-        >
-          <option value="Roboto">Roboto</option>
-          <option value="Arial">Arial</option>
-          <option value="Helvetica">Helvetica</option>
-          <option value="Times New Roman">Times New Roman</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Verdana">Verdana</option>
-          <option value="Courier New">Courier New</option>
-          <option value="Comic Sans MS">Comic Sans MS</option>
-          <option value="Impact">Impact</option>
-        </select>
-      </div>
-    </div>
- 
     <!-- Formatting Group -->
     <div class="toolbar-group">
       <!-- Text Formatting Buttons -->
@@ -125,17 +100,6 @@
           </svg>
         </button>
       </div>
-
-      <!-- Color Picker -->
-      <div class="color-picker-container">
-        <input
-          type="color"
-          :value="currentColor"
-          @input="handleColorChange"
-          class="color-picker"
-          title="Select text color"
-        />
-      </div>
     </div>
   </div>
 </template>
@@ -155,18 +119,6 @@ const props = defineProps({
   elementSize: {
     type: Object,
     default: () => ({ width: 0, height: 0 })
-  },
-  currentFont: {
-    type: String,
-    default: 'Roboto'
-  },
-  currentColor: {
-    type: String,
-    default: '#FF5CA0'
-  },
-  currentFontSize: {
-    type: Number,
-    default: 16
   },
   isLocked: {
     type: Boolean,
@@ -191,23 +143,15 @@ const emit = defineEmits([
   'toggle-lock',
   'duplicate',
   'delete',
-  'font-change',
-  'color-change',
-  'font-size-change',
   'bold-change',
   'italic-change',
   'underline-change'
 ])
 
-// Font size limits
-const minFontSize = 8
-const maxFontSize = 72
-
-
 const toolbarStyle = computed(() => {
   if (!props.elementPosition) return { display: 'none' }
 
-  const toolbarWidth = 200 
+  const toolbarWidth = 150
   const elementWidth = props.elementSize?.width || 100 
   const halfElement = elementWidth / 2
 
@@ -237,28 +181,6 @@ const toolbarStyle = computed(() => {
 
   return style
 })
-
-const handleFontChange = (event) => {
-  emit('font-change', event.target.value)
-}
-
-const handleColorChange = (event) => {
-  emit('color-change', event.target.value)
-}
-
-const increaseFontSize = () => {
-  if (props.currentFontSize < maxFontSize) {
-    const newSize = Math.min(maxFontSize, props.currentFontSize + 2)
-    emit('font-size-change', newSize)
-  }
-}
-
-const decreaseFontSize = () => {
-  if (props.currentFontSize > minFontSize) {
-    const newSize = Math.max(minFontSize, props.currentFontSize - 2)
-    emit('font-size-change', newSize)
-  }
-}
 
 const toggleBold = () => {
   emit('bold-change', !props.isBold)
@@ -339,77 +261,6 @@ const toggleUnderline = () => {
 
 .toolbar-btn svg {
   pointer-events: none;
-}
-
-
-/* Font Selector */
-.font-selector {
-  display: flex;
-  align-items: center;
-}
-
-.font-select {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
-  padding: 6px 8px;
-  appearance: none;
-  font-size: 11px;
-  color: #374151;
-  cursor: pointer;
-  max-width: 70px;
-  outline: none;
-  transition: all 0.15s ease;
-}
-
-.font-select:hover {
-  background: rgba(255, 255, 255, 1);
-  border-color: rgba(0, 0, 0, 0.15);
-}
-
-.font-select:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-
-/* Color Picker */
-.color-picker-container {
-  display: flex;
-  align-items: center;
-}
-
-.color-picker {
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 50px;
-  cursor: pointer;
-  background: none;
-  padding: 0;
-  outline: none;
-  transition: all 0.15s ease;
-}
-
-.color-picker:hover {
-  transform: scale(1.1);
-  border-color: rgba(0, 0, 0, 0.3);
-}
-
-.color-picker::-webkit-color-swatch-wrapper {
-  padding: 0;
-  border-radius: 50px;
-}
-
-.color-picker::-webkit-color-swatch {
-  border: none;
-  border-radius: 50px;
-  padding: 0;
-}
-
-.color-picker::-moz-color-swatch {
-  border: none;
-  border-radius: 50px;
-  padding: 0;
 }
 
 /* Formatting Buttons */

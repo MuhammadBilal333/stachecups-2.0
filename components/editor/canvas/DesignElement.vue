@@ -20,8 +20,9 @@
     </v-group>
     
     <v-text
-      v-else-if="props.element.type === 'text' && !isEditing"
+      v-else-if="(props.element.type === 'text' || props.element.type === 'monogram') && !isEditing"
       ref="konvaTextRef"
+      :key="`text-${props.element.id}-${props.element.font}-${props.element.fontSize}-${props.element.content?.length || 0}`"
       :config="textConfig"
     />
 
@@ -51,7 +52,7 @@
 
 <script setup>
 import Konva from 'konva';
-import { ref, computed, watch, nextTick, onUnmounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, onBeforeUnmount } from 'vue';
 
 const props = defineProps({
   element: {
@@ -61,7 +62,7 @@ const props = defineProps({
   elementType: {
     type: String,
     required: true,
-    validator: (value) => ['image', 'text', 'emoji'].includes(value)
+    validator: (value) => ['image', 'text', 'emoji', 'monogram'].includes(value)
   },
   isSelected: {
     type: Boolean,
@@ -319,52 +320,196 @@ const stripHtml = (html) => {
 };
 
 const textConfig = computed(() => {
-  if (props.elementType !== 'text') return {};
- 
-  if(props.element?.type === 'emoji') {
-     
-  const fontSize = props.element.fontSize || baseFontSize;
- 
+  // CRITICAL FIX: Don't early return based on elementType
+  // Process based on actual element.type instead
+  const elementRealType = props.element?.type || 'text';
+
+  if(elementRealType === 'emoji') {
+    const fontSize = props.element.fontSize || baseFontSize;
   
-  return {
-    text: props.element.content, 
-    fontSize: fontSize,
-    fontFamily: 'Roboto',
-    fill: props.element.color || '#000000',
-    fontStyle: `${props.element.bold ? 'bold' : 'normal'} ${props.element.italic ? 'italic' : 'normal'}`,
-    textDecoration: props.element.transformation || '',
-    align: 'center',
-    verticalAlign: 'middle',
-    width: Math.max(20, props.element.content.length * fontSize * 0.7),
-    height: fontSize * 1.5,
-    offsetX: Math.max(20, props.element.content.length * fontSize * 0.7) / 2,
-    offsetY: (fontSize * 1.7) / 2,
-    padding: 1,
-    listening: true,
-    perfectDrawEnabled: false
-  };
-  }else{
+    const config = {
+      text: props.element.content, 
+      fontSize: fontSize,
+      fontFamily: 'Roboto',
+      fill: props.element.color || '#000000',
+      fontStyle: `${props.element.bold ? 'bold' : 'normal'} ${props.element.italic ? 'italic' : 'normal'}`,
+      textDecoration: props.element.underline ? 'underline' : (props.element.transformation || ''),
+      align: 'center',
+      verticalAlign: 'middle',
+      width: Math.max(20, props.element.content.length * fontSize * 0.7),
+      height: fontSize * 1.5,
+      offsetX: Math.max(20, props.element.content.length * fontSize * 0.7) / 2,
+      offsetY: (fontSize * 1.7) / 2,
+      padding: 1,
+      listening: true,
+      perfectDrawEnabled: false
+    };
     
-  const fontSize = props.element.fontSize || baseFontSize;
-  const text = stripHtml(props.element.content);
-  
-  return {
-    text: text,
-    fontSize: fontSize,
-    fontFamily: props.element.font || 'Roboto',
-    fill: props.element.color || '#000000',
-    fontStyle: `${props.element.bold ? 'bold' : 'normal'} ${props.element.italic ? 'italic' : 'normal'}`,
-    textDecoration: props.element.transformation || '',
-    align: 'center',
-    verticalAlign: 'middle',
-    width: Math.max(80, text.length * fontSize * 0.7),
-    height: fontSize * 1.7,
-    offsetX: Math.max(80, text.length * fontSize * 0.7) / 2,
-    offsetY: (fontSize * 1.7) / 2,
-    padding: 3,
-    listening: true,
-    perfectDrawEnabled: false
-  };
+    return config
+  }else if(elementRealType === 'monogram'){
+    const fontSize = props.element.fontSize || baseFontSize;
+    const text = props.element.content || 'ABC';
+    const layoutStyle = props.element.layoutStyle || 'horizontal';
+    const font = props.element.font || 'monogram_kk';
+    const letterSpacing = props.element.letterSpacing || 0;
+    const spacing = props.element.spacing || 10;
+
+    let width, height, lineHeight;
+
+    if (layoutStyle === 'stacked' || layoutStyle === 'vertical') {
+      const letters = text.split('\n').filter(line => line.trim().length > 0);
+      const letterCount = letters.length;
+
+      lineHeight = (fontSize + spacing) / fontSize;
+      height = (fontSize * letterCount) + (spacing * (letterCount - 1)) + 40;
+
+      const tempText = new Konva.Text({
+        text: letters.join(''),
+        fontSize: fontSize,
+        fontFamily: font,
+        fontStyle: `${props.element.bold ? 'bold' : 'normal'} ${props.element.italic ? 'italic' : 'normal'}`,
+      });
+      width = Math.max(tempText.width() + 40, fontSize * 2);
+      tempText.destroy();
+
+    } else if (layoutStyle === 'circle') {
+      const tempText = new Konva.Text({
+        text: text.replace(/\n/g, ''),
+        fontSize: fontSize,
+        fontFamily: font,
+        fontStyle: `${props.element.bold ? 'bold' : 'normal'} ${props.element.italic ? 'italic' : 'normal'}`,
+      });
+      const textWidth = tempText.width();
+      const textHeight = tempText.height();
+      tempText.destroy();
+
+      const maxDimension = Math.max(textWidth, textHeight);
+      width = maxDimension + 60;
+      height = maxDimension + 60;
+      lineHeight = 1.2;
+
+    } else {
+      const displayText = layoutStyle === 'horizontal'
+        ? text.replace(/\n/g, ' ')
+        : text.replace(/\n/g, '');
+
+      const tempText = new Konva.Text({
+        text: displayText,
+        fontSize: fontSize,
+        fontFamily: font,
+        fontStyle: `${props.element.bold ? 'bold' : 'normal'} ${props.element.italic ? 'italic' : 'normal'}`,
+        letterSpacing: letterSpacing,
+      });
+
+      width = Math.max(tempText.width() + 40, fontSize * 3);
+      height = Math.max(tempText.height() + 30, fontSize * 1.5);
+      tempText.destroy();
+      lineHeight = 1.2;
+    }
+
+    const config = {
+      text: text,
+      fontSize: fontSize,
+      fontFamily: font,
+      fill: props.element.color || '#000000',
+      fontStyle: `${props.element.bold ? 'bold' : 'normal'} ${props.element.italic ? 'italic' : 'normal'}`,
+      textDecoration: props.element.underline ? 'underline' : (props.element.transformation || ''),
+      align: 'center',
+      verticalAlign: 'middle',
+      width: width,
+      height: height,
+      offsetX: width / 2,
+      offsetY: height / 2,
+      padding: 10,
+      listening: true,
+      perfectDrawEnabled: false,
+      letterSpacing: letterSpacing,
+      lineHeight: lineHeight,
+    };
+
+    if (props.element.stroke?.enabled) {
+      config.stroke = props.element.stroke.color || '#FFFFFF';
+      config.strokeWidth = props.element.stroke.width || 2;
+    }
+
+    if (props.element.shadow?.enabled) {
+      config.shadowColor = props.element.shadow.color || '#000000';
+      config.shadowBlur = props.element.shadow.blur || 5;
+      config.shadowOffsetX = props.element.shadow.offsetX || 2;
+      config.shadowOffsetY = props.element.shadow.offsetY || 2;
+      config.shadowOpacity = props.element.shadow.opacity || 0.5;
+    }
+
+    if (props.element.engrave) {
+      config.globalCompositeOperation = 'destination-out';
+    }
+
+    return config;
+  }else{
+    const fontSize = props.element.fontSize || baseFontSize;
+    const text = stripHtml(props.element.content) || 'Your text';
+    const font = props.element.font || 'Roboto';
+    const letterSpacing = props.element.letterSpacing || 0;
+
+    // CRITICAL FIX: Use Konva's measureText for accurate width
+    const tempText = new Konva.Text({
+      text: text,
+      fontSize: fontSize,
+      fontFamily: font,
+      fontStyle: `${props.element.bold ? 'bold' : 'normal'} ${props.element.italic ? 'italic' : 'normal'}`,
+      letterSpacing: letterSpacing,
+      lineHeight: props.element.lineHeight || 1.2,
+    });
+
+    // Get actual measured dimensions
+    let width = tempText.width();
+    let height = tempText.height();
+
+    // Add padding for safety
+    width = Math.max(width + 20, 100);
+    height = Math.max(height + 10, fontSize * 1.2);
+
+    // Cleanup temp text
+    tempText.destroy();
+
+    const config = {
+      text: text,
+      fontSize: fontSize,
+      fontFamily: font,
+      fill: props.element.color || '#000000',
+      fontStyle: `${props.element.bold ? 'bold' : 'normal'} ${props.element.italic ? 'italic' : 'normal'}`,
+      textDecoration: props.element.underline ? 'underline' : (props.element.transformation || ''),
+      align: 'center',
+      verticalAlign: 'middle',
+      width: width,
+      height: height,
+      offsetX: width / 2,
+      offsetY: height / 2,
+      padding: 10,
+      listening: true,
+      perfectDrawEnabled: false,
+      letterSpacing: letterSpacing,
+      lineHeight: props.element.lineHeight || 1.2,
+    };
+
+    if (props.element.stroke?.enabled) {
+      config.stroke = props.element.stroke.color || '#FFFFFF';
+      config.strokeWidth = props.element.stroke.width || 2;
+    }
+
+    if (props.element.shadow?.enabled) {
+      config.shadowColor = props.element.shadow.color || '#000000';
+      config.shadowBlur = props.element.shadow.blur || 5;
+      config.shadowOffsetX = props.element.shadow.offsetX || 2;
+      config.shadowOffsetY = props.element.shadow.offsetY || 2;
+      config.shadowOpacity = props.element.shadow.opacity || 0.5;
+    }
+
+    if (props.element.engrave) {
+      config.globalCompositeOperation = 'destination-out';
+    }
+
+    return config;
   }
 
 });
@@ -633,7 +778,7 @@ watch(() => [props.element.fontSize, props.element.content, props.element.scale]
   if (props.elementType === 'text' && !props.isLooped) {
     const currentPosition = props.element.position || { x: 0, y: 0 };
     const constrainedPos = constrainPosition(currentPosition);
-    
+
     if (constrainedPos.x !== currentPosition.x || constrainedPos.y !== currentPosition.y) {
       const newElement = {
         ...props.element,
@@ -643,6 +788,28 @@ watch(() => [props.element.fontSize, props.element.content, props.element.scale]
     }
   }
 }, { deep: true });
+
+// CRITICAL: Force redraw when text/monogram properties change
+watch(
+  () => [
+    props.element.font,
+    props.element.fontSize,
+    props.element.layoutStyle,
+    props.element.spacing,
+    props.element.content,
+    props.element.color,
+    props.element.letterSpacing,
+    props.element.lineHeight
+  ],
+  () => {
+    if (props.elementType === 'text' || props.elementType === 'monogram') {
+      nextTick(() => {
+        scheduleBatchDraw();
+      });
+    }
+  },
+  { deep: true }
+);
 
 const transformer = ref(null);
 
@@ -711,6 +878,20 @@ const cleanupTextThrottling = () => {
   pendingTextUpdate = null;
 };
 
+// Listen for fonts-loaded event and force redraw
+let fontsLoadedListener = null;
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    fontsLoadedListener = () => {
+      nextTick(() => {
+        scheduleBatchDraw();
+      });
+    };
+    window.addEventListener('fonts-loaded', fontsLoadedListener);
+  }
+});
+
 onUnmounted(() => {
   if (transformer.value) {
     transformer.value.destroy();
@@ -718,6 +899,11 @@ onUnmounted(() => {
   }
   cleanupBatchDraw();
   cleanupTextThrottling();
+
+  // Remove fonts-loaded listener
+  if (fontsLoadedListener && typeof window !== 'undefined') {
+    window.removeEventListener('fonts-loaded', fontsLoadedListener);
+  }
 });
 </script>
 

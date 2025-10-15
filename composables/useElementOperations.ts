@@ -1,3 +1,5 @@
+import { nextTick } from 'vue'
+import { useQuasar } from 'quasar'
 import { useEditorStore } from '~/store/editor'
 import { useDrawToolStore } from '~/store/drawTool'
 import { useTextEditorStore } from '~/store/textEditor'
@@ -227,9 +229,66 @@ export function useElementOperations() {
   }
   
   const updateTextFont = (elementId: string, font: string) => {
-    editorStore.updateElement(elementId, { font })
+    const element = editorStore.elements.find(el => el.id === elementId)
+    if (!element) return
+
+    // For monograms, regenerate content based on layout style when font changes
+    if (element.type === 'monogram' && element.monogramLetters && element.layoutStyle) {
+      const { first, middle, last } = element.monogramLetters
+      const layout = element.layoutStyle
+      let regeneratedContent = ''
+
+      // Regenerate content based on layout style (same logic as MonogramPicker)
+      const letterCount = [first, middle, last].filter(l => l && String(l).length > 0).length
+      const f = (first || '').toUpperCase()
+      const m = (middle || '').toUpperCase()
+      const l = (last || '').toUpperCase()
+
+      if (letterCount === 1) {
+        regeneratedContent = f
+      } else if (letterCount === 2) {
+        switch (layout) {
+          case 'horizontal':
+            regeneratedContent = `${f} ${l}`
+            break
+          case 'stacked':
+          case 'vertical':
+            regeneratedContent = `${f}\n${l}`
+            break
+          case 'circle':
+          default:
+            regeneratedContent = `${f}${l}`
+        }
+      } else {
+        // For 3 letters
+        switch (layout) {
+          case 'traditional':
+            regeneratedContent = `${f}${l}${m}` // First-Last-Middle
+            break
+          case 'horizontal':
+            regeneratedContent = `${f}${m}${l}`
+            break
+          case 'stacked':
+          case 'vertical':
+            regeneratedContent = `${f}\n${m}\n${l}`
+            break
+          case 'circle':
+          default:
+            regeneratedContent = `${f}${m}${l}`
+        }
+      }
+
+      editorStore.updateElement(elementId, {
+        font,
+        content: regeneratedContent
+      })
+    } else {
+      // Regular text element - just update font
+      editorStore.updateElement(elementId, { font })
+    }
+
     textEditorStore.setSelectedFont(font)
-    
+
     if (textEditorStore.isEditingText) {
       textEditorStore.setEditingFontFamily(font)
     }
