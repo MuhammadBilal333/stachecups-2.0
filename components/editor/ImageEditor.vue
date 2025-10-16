@@ -124,7 +124,7 @@
       @checkout="handleCheckout"
       @activate-text-tool="activateTextTool"
       @activate-draw-tool="activateDrawTool"
-      @open-advanced-text="() => {}" 
+      @open-advanced-text="() => {}"
       @add-monogram="handleAddMonogram"
       @update-monogram="handleUpdateMonogram"
       @switch-product="handleSwitchProduct"
@@ -150,6 +150,7 @@
       @update:brush-color="handleBrushColorChange"
       @clear-drawing="handleClearDrawing"
       @finish-drawing="handleFinishDrawing"
+      @layer-update="canvasOps.updateCupTexture()"
     />
 
     <FrameSelectionModal
@@ -1570,7 +1571,6 @@ onUnmounted(() => {
 .image-editor-container {
   position: relative;
   width: 100%;
-  min-height: 100vh;
 }
 </style>
 

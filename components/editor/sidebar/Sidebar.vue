@@ -2,7 +2,7 @@
   <div>
     <div
       v-if="!isMobile"
-      class="fixed left-0 top-0 h-screen w-20 flex flex-col z-40 shadow-sm"
+      class="fixed left-0 top-16 h-screen w-20 flex flex-col z-40 shadow-sm"
     >
 
       <div class="flex-1 px-2 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
@@ -60,9 +60,9 @@
                 <X class="w-5 h-5" :stroke-width="2" />
               </button>
             </div>
-            <div class="flex-1 overflow-y-auto px-4 py-4 emoji-picker-wrapper">
+            <div class="flex-1 overflow-y-auto ] px-4 py-4 emoji-picker-wrapper">
               <ClientOnly>
-                <EmojiPicker v-if="EmojiPicker" :native="true" @select="handleEmojiSelect" />
+                <EmojiPicker v-if="EmojiPicker" :native="true" @select="handleEmojiSelect"  disable-skin-tones="true" class="min-h-[300px]" />
                 <div v-else class="flex items-center justify-center h-full text-gray-500">Loading...</div>
               </ClientOnly>
             </div>
@@ -178,7 +178,7 @@
 
           <div
             v-if="activeMenu === 'text'"
-            class="fixed top-16 left-20 w-80 h-[calc(100vh-4rem)] bg-white border border-gray-200 shadow-xl z-50 flex flex-col rounded-r-lg overflow-hidden"
+            class="fixed top-16 left-20 w-96 h-[calc(100vh-4rem)] bg-white border border-gray-200 shadow-xl z-50 flex flex-col rounded-r-lg overflow-hidden"
           >
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
               <h3 class="text-lg font-semibold text-gray-900">Text</h3>
@@ -233,6 +233,142 @@
                     @letter-spacing-change="handleLetterSpacingChange"
                     @line-height-change="handleLineHeightChange"
                   />
+                </div>
+
+                <div class="border-t border-gray-200 my-4"></div>
+
+                <!-- Advanced Text Effects -->
+                <div class="space-y-4">
+                  <h4 class="text-sm font-medium text-gray-700 uppercase tracking-wide">Advanced Effects</h4>
+
+                  <!-- Stroke -->
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <label class="text-xs font-medium text-gray-600">Stroke</label>
+                      <q-toggle
+                        v-model="strokeEnabled"
+                        color="purple"
+                        size="sm"
+                        @update:model-value="toggleStroke"
+                      />
+                    </div>
+                    <div v-if="strokeEnabled" class="space-y-2 pl-4">
+                      <q-input
+                        v-model="strokeColor"
+                        type="color"
+                        dense
+                        outlined
+                        label="Color"
+                        @update:model-value="handleStrokeColorChange"
+                      />
+                      <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500">Width:</span>
+                        <q-slider
+                          v-model="strokeWidth"
+                          :min="1"
+                          :max="10"
+                          :step="1"
+                          color="purple"
+                          class="flex-1"
+                          @update:model-value="handleStrokeWidthChange"
+                        />
+                        <span class="text-xs text-gray-500 w-10">{{ strokeWidth }}px</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Shadow -->
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <label class="text-xs font-medium text-gray-600">Shadow</label>
+                      <q-toggle
+                        v-model="shadowEnabled"
+                        color="purple"
+                        size="sm"
+                        @update:model-value="toggleShadow"
+                      />
+                    </div>
+                    <div v-if="shadowEnabled" class="space-y-2 pl-4">
+                      <q-input
+                        v-model="shadowColor"
+                        type="color"
+                        dense
+                        outlined
+                        label="Color"
+                        @update:model-value="handleShadowColorChange"
+                      />
+                      <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                          <span class="text-xs text-gray-500 w-16">Blur:</span>
+                          <q-slider
+                            v-model="shadowBlur"
+                            :min="0"
+                            :max="20"
+                            :step="1"
+                            color="purple"
+                            class="flex-1"
+                            @update:model-value="handleShadowBlurChange"
+                          />
+                          <span class="text-xs text-gray-500 w-10">{{ shadowBlur }}px</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <span class="text-xs text-gray-500 w-16">X Offset:</span>
+                          <q-slider
+                            v-model="shadowOffsetX"
+                            :min="-20"
+                            :max="20"
+                            :step="1"
+                            color="purple"
+                            class="flex-1"
+                            @update:model-value="handleShadowOffsetXChange"
+                          />
+                          <span class="text-xs text-gray-500 w-10">{{ shadowOffsetX }}px</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <span class="text-xs text-gray-500 w-16">Y Offset:</span>
+                          <q-slider
+                            v-model="shadowOffsetY"
+                            :min="-20"
+                            :max="20"
+                            :step="1"
+                            color="purple"
+                            class="flex-1"
+                            @update:model-value="handleShadowOffsetYChange"
+                          />
+                          <span class="text-xs text-gray-500 w-10">{{ shadowOffsetY }}px</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <span class="text-xs text-gray-500 w-16">Opacity:</span>
+                          <q-slider
+                            v-model="shadowOpacity"
+                            :min="0"
+                            :max="1"
+                            :step="0.1"
+                            color="purple"
+                            class="flex-1"
+                            @update:model-value="handleShadowOpacityChange"
+                          />
+                          <span class="text-xs text-gray-500 w-10">{{ Math.round(shadowOpacity * 100) }}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Engrave -->
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <label class="text-xs font-medium text-gray-600">Engrave Effect</label>
+                      <q-toggle
+                        v-model="engraveEnabled"
+                        color="purple"
+                        size="sm"
+                        @update:model-value="toggleEngrave"
+                      />
+                    </div>
+                    <div class="text-xs text-gray-500 pl-4">
+                      Creates a knockout effect where text cuts through the background
+                    </div>
+                  </div>
                 </div>
 
               </div>
@@ -365,9 +501,9 @@
       v-else
       class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-40 shadow-lg"
     >
-      <div class="flex items-center justify-around px-2 py-3">
+      <div class="flex items-center justify-between  flex-nowrap   overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent gap-0 px-2 py-3">
         <button
-          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all"
+          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all min-w-16"
           :class="activeMenu === 'stickers' ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'"
           @click="toggleMenu('stickers')"
         >
@@ -375,8 +511,9 @@
           <span class="text-xs font-medium">Stickers</span>
         </button>
 
+
         <button
-          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all"
+          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all min-w-16"
           :class="activeMenu === 'emoji' ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'"
           @click="toggleMenu('emoji')"
         >
@@ -385,7 +522,7 @@
         </button>
 
         <button
-          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all"
+          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all min-w-16"
           :class="activeMenu === 'background' ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'"
           @click="toggleMenu('background')"
         >
@@ -394,7 +531,7 @@
         </button>
 
         <button
-          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all"
+          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all min-w-16"
           :class="activeMenu === 'layers' ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'"
           @click="toggleMenu('layers')"
         >
@@ -403,7 +540,16 @@
         </button>
 
         <button
-          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all"
+          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all min-w-16"
+          :class="activeMenu === 'monogram' ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'"
+          @click="toggleMenu('monogram')"
+        >
+          <q-icon name="mdi-alpha-m-circle" size="20px" class="mb-1" :class="activeMenu === 'monogram' ? 'text-purple-600' : 'text-gray-600'" />
+          <span class="text-xs font-medium">Monogram</span>
+        </button>
+
+        <button
+          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all min-w-16"
           :class="(activeMenu === 'text' || textToolActive) ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'"
           @click="toggleTextMenu"
         >
@@ -412,16 +558,16 @@
         </button>
 
         <button
-          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all"
-          :class="drawToolActive ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'"
-          @click="activateDrawTool"
+          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg transition-all min-w-16"
+          :class="activeMenu === 'draw' ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'"
+          @click="toggleMenu('draw')"
         >
           <PenTool class="w-5 h-5 mb-1" :stroke-width="2" />
           <span class="text-xs font-medium">Draw</span>
         </button>
 
         <button
-          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg hover:bg-gray-50 transition-all"
+          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg hover:bg-gray-50 transition-all min-w-16"
           @click="fileInputRef?.pickFiles()"
         >
           <Upload class="w-5 h-5 mb-1" :stroke-width="2" />
@@ -429,7 +575,7 @@
         </button>
 
         <button
-          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white transition-all"
+          class="flex flex-col items-center justify-center w-16 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white transition-all min-w-16"
           @click="handleCheckout"
         >
           <ShoppingCart class="w-5 h-5 mb-1" :stroke-width="2" />
@@ -438,349 +584,543 @@
       </div>
     </div>
 
-    <div v-if="isMobile && activeMenu" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end" @click="activeMenu = null">
-      <div class="bg-white rounded-t-3xl w-full max-h-[80vh] overflow-auto p-6" @click.stop>
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-2xl font-bold text-gray-900">
-            {{ activeMenu === 'stickers' ? 'Stickers' :
-               activeMenu === 'emoji' ? 'Elements' :
-               activeMenu === 'background' ? 'Background' :
-               activeMenu === 'layers' ? 'Layers' :
-               activeMenu === 'text' ? 'Text' : '' }}
-          </h3>
-          <button @click="activeMenu = null" class="text-gray-400 hover:text-gray-600 transition-colors">
-            <X class="w-6 h-6" :stroke-width="2" />
-          </button>
-        </div>
-
-        <toolbar-sticker-picker v-if="activeMenu === 'stickers'" @select="handleStickerSelect" />
-        <ClientOnly v-else-if="activeMenu === 'emoji'">
-          <EmojiPicker v-if="EmojiPicker" :native="true" @select="handleEmojiSelect" />
-          <div v-else class="flex items-center justify-center h-32 text-gray-500">Loading...</div>
-        </ClientOnly>
-        <BackgroundPicker v-else-if="activeMenu === 'background'" />
-        <LayerPanel v-else-if="activeMenu === 'layers'" @layer-update="handleLayerUpdate" />
-        
-        <div v-else-if="activeMenu === 'text'" class="space-y-4">
-          <button
-            class="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all duration-200 flex flex-col items-center justify-center text-center"
-            @click="handleAddText"
-          >
-            <Type class="w-8 h-8 text-gray-400 mb-2" :stroke-width="2" />
-            <div class="font-medium text-gray-900 mb-1">Add Text</div>
-            <div class="text-sm text-gray-500">Click canvas to add text box</div>
-          </button>
-
-          <div class="border-t border-gray-200 my-4"></div>
-
-          <!-- Advanced Options -->
-          <div class="space-y-3">
-            <h4 class="text-sm font-medium text-gray-700 uppercase tracking-wide">Advanced Options</h4>
-            
-            <!-- Monogram button removed - now has its own dedicated sidebar button -->
+    <div v-if="isMobile && activeMenu" class="fixed inset-0 top-[40%] z-50 flex items-end transition-opacity duration-200" @click="activeMenu = null">
+      <div class="bg-white rounded-t-3xl w-full max-h-[45vh] overflow-y-auto shadow-2xl" @click.stop>
+        <!-- Header with handle -->
+        <div class="flex flex-col sticky z-50 bg-white top-0 border-b border-gray-200">
+          <!-- Drag Handle -->
+          <div class="flex justify-center bg-white pt-2 pb-2">
+           
           </div>
 
-          <div class="border-t border-gray-200 my-4"></div>
+          <!-- Title & Close Button -->
+          <div class="flex items-center justify-between m px-4 pb-3">
+            <h3 class="text-lg font-semibold text-gray-900">
+              {{ activeMenu === 'stickers' ? 'Stickers' :
+                 activeMenu === 'emoji' ? 'Elements' :
+                 activeMenu === 'background' ? 'Background' :
+                 activeMenu === 'layers' ? 'Layers' :
+                 activeMenu === 'monogram' ? 'Create Monogram' :
+                 activeMenu === 'text' ? 'Text' :
+                 activeMenu === 'draw' ? 'Draw Tool' : '' }}
+            </h3>
+            <button
+              @click="activeMenu = null"
+              class="w-8 h-8 rounded-lg hover:bg-gray-100 active:bg-gray-200 flex items-center justify-center text-gray-500 transition-all touch-manipulation"
+            >
+              <X class="w-5 h-5" :stroke-width="2" />
+            </button>
+          </div>
+        </div>
 
-          <!-- Text Styling Panel (Mobile) -->
-          <div class="space-y-4">
-            <h4 class="text-sm font-medium text-gray-700 uppercase tracking-wide">Text Styling</h4>
-            
-            <!-- Font Family Section (Mobile) -->
-            <div class="space-y-3">
-              <div class="flex items-center gap-2">
-                <q-icon name="mdi-format-text" size="16px" class="text-gray-600" />
-                <label class="text-xs font-medium text-gray-600 uppercase tracking-wide">Font Family</label>
-              </div>
-              
-              <!-- Font Category Tabs -->
-              <div class="flex gap-1 bg-gray-100 rounded-lg p-1">
-                <button
-                  v-for="category in fontCategories"
-                  :key="category.value"
-                  class="flex-1 px-2 py-1 text-xs font-medium rounded-md transition-all duration-200"
-                  :class="selectedFontCategory === category.value 
-                    ? 'bg-white text-purple-600 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-800'"
-                  @click="selectedFontCategory = category.value"
-                >
-                  {{ category.label }}
-                </button>
-              </div>
-              
-              <!-- Font Search -->
-              <q-input
-                v-model="fontSearchQuery"
-                placeholder="Search fonts..."
-                dense
-                outlined
-                class="text-sm"
-              >
-                <template #prepend>
-                  <q-icon name="search" size="16px" class="text-gray-400" />
-                </template>
-              </q-input>
-              
-              <!-- Font Grid -->
-              <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                <button
-                  v-for="font in filteredFonts"
-                  :key="font.value"
-                  class="p-2 text-left border border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all duration-200"
-                  :class="selectedFont === font.value ? 'border-purple-500 bg-purple-50' : ''"
-                  @click="handleFontChange(font.value)"
-                >
-                  <div class="text-xs font-medium text-gray-900 truncate" :style="{ fontFamily: font.value }">
-                    {{ font.label }}
-                  </div>
-                </button>
-              </div>
-            </div>
+        <!-- Content Area with better padding and overflow -->
+        <div class="  px-4 pb-6">
 
-            <!-- Font Size (Mobile) -->
-            <div class="space-y-3">
-              <div class="flex items-center gap-2">
-                <q-icon name="mdi-format-text" size="16px" class="text-gray-600" />
-                <label class="text-xs font-medium text-gray-600 uppercase tracking-wide">Font Size</label>
-              </div>
-              
-              <!-- Font Size Slider -->
-              <div class="flex items-center gap-2">
-                <q-slider
-                  v-model="fontSize"
-                  :min="12"
-                  :max="200"
-                  :step="1"
-                  color="purple"
-                  class="flex-1"
-                  @update:model-value="handleFontSizeChange"
-                />
-                <span class="text-xs text-gray-500 w-8">{{ fontSize }}px</span>
-              </div>
-              
-              <!-- Font Size Presets -->
-              <div class="flex flex-wrap gap-1">
-                <button
-                  v-for="preset in fontSizePresets"
-                  :key="preset.label"
-                  class="px-2 py-1 text-xs font-medium rounded-md transition-all duration-200"
-                  :class="isFontSizePresetActive(preset.value) 
-                    ? 'bg-purple-100 text-purple-700 border border-purple-300' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-                  @click="handleFontSizePreset(preset.value)"
-                >
-                  {{ preset.label }}
-                </button>
-              </div>
-            </div>
+          <!-- Stickers Content -->
+          <div v-if="activeMenu === 'stickers'" class="mobile-content pt-2">
+            <toolbar-sticker-picker @select="handleStickerSelect" />
+          </div>
 
-            <!-- Text Color (Mobile) -->
-            <div class="space-y-2">
-              <div class="flex items-center gap-2">
-                <div class="w-4 h-4 rounded-full border border-gray-300" :style="{ backgroundColor: textColor }"></div>
-                <label class="text-xs font-medium text-gray-600 uppercase tracking-wide">Text Color</label>
+          <!-- Emoji Picker Content -->
+          <div v-else-if="activeMenu === 'emoji'" class="mobile-content pt-2">
+            <ClientOnly>
+              <EmojiPicker v-if="EmojiPicker" :native="true" @select="handleEmojiSelect" />
+              <div v-else class="flex items-center justify-center h-40 text-gray-500">
+                <div class="flex flex-col items-center gap-2">
+                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  <span class="text-sm">Loading...</span>
+                </div>
               </div>
-              <q-input
-                v-model="textColor"
-                type="color"
-                dense
-                outlined
-                @update:model-value="handleColorChange"
-              >
-                <template #prepend>
-                  <div class="w-6 h-6 rounded border border-gray-300" :style="{ backgroundColor: textColor }"></div>
-                </template>
-              </q-input>
-            </div>
+            </ClientOnly>
+          </div>
 
-            <!-- Text Formatting -->
-            <div class="space-y-2">
-              <label class="text-xs font-medium text-gray-600 uppercase tracking-wide">Formatting</label>
-              <div class="flex gap-2">
-                <q-btn
-                  :color="isBold ? 'purple' : 'grey-3'"
-                  :text-color="isBold ? 'white' : 'black'"
-                  size="sm"
-                  icon="format_bold"
-                  @click="toggleBold"
-                />
-                <q-btn
-                  :color="isItalic ? 'purple' : 'grey-3'"
-                  :text-color="isItalic ? 'white' : 'black'"
-                  size="sm"
-                  icon="format_italic"
-                  @click="toggleItalic"
-                />
-                <q-btn
-                  :color="isUnderline ? 'purple' : 'grey-3'"
-                  :text-color="isUnderline ? 'white' : 'black'"
-                  size="sm"
-                  icon="format_underlined"
-                  @click="toggleUnderline"
-                />
-              </div>
-            </div>
+          <!-- Background Picker Content -->
+          <div v-else-if="activeMenu === 'background'" class="mobile-content pt-2">
+            <BackgroundPicker />
+          </div>
 
-            <!-- Stroke -->
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <label class="text-xs font-medium text-gray-600 uppercase tracking-wide">Stroke</label>
-                <q-toggle
-                  v-model="strokeEnabled"
-                  color="purple"
-                  size="sm"
-                  @update:model-value="toggleStroke"
-                />
+          <!-- Layers Content -->
+          <div v-else-if="activeMenu === 'layers'" class="mobile-content pt-2">
+            <LayerPanel @layer-update="handleLayerUpdate" />
+          </div>
+
+          <!-- Monogram Content -->
+          <div v-else-if="activeMenu === 'monogram'" class="mobile-content pt-2">
+            <SidebarMonogramPicker
+              :editing-element="editingMonogramElement"
+              @add="handleMonogramAdd"
+              @update="handleMonogramUpdate"
+              @cancel="closeMenu"
+            />
+          </div>
+
+          <!-- Text Content -->
+          <div v-else-if="activeMenu === 'text'" class="mobile-content space-y-5 pt-4">
+            <button
+              class="w-full p-4 border-2 border-dashed border-gray-300 rounded-xl active:border-purple-500 active:bg-purple-50 transition-all duration-200 flex flex-col items-center justify-center text-center touch-manipulation"
+              @click="handleAddText"
+            >
+              <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-2">
+                <Type class="w-6 h-6 text-purple-600" :stroke-width="2" />
               </div>
-              <div v-if="strokeEnabled" class="space-y-2 pl-4">
+              <div class="text-base font-semibold text-gray-900 mb-1">Add Text</div>
+              <div class="text-xs text-gray-500">Tap canvas to add</div>
+            </button>
+
+            <div class="h-px bg-gray-200"></div>
+
+            <!-- Text Styling Panel (Mobile) -->
+            <div class="space-y-5">
+
+              <!-- Font Family Section (Mobile) -->
+              <div class="space-y-3">
+                <h5 class="text-base font-bold text-gray-900">Font</h5>
+
+                <!-- Font Category Tabs -->
+                <div class="grid grid-cols-2 gap-2 bg-gray-100 rounded-lg p-1">
+                  <button
+                    v-for="category in fontCategories"
+                    :key="category.value"
+                    class="px-3 py-2 text-xs font-semibold rounded-md transition-all duration-200 touch-manipulation"
+                    :class="selectedFontCategory === category.value
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'bg-transparent text-gray-600 active:bg-gray-200'"
+                    @click="selectedFontCategory = category.value"
+                  >
+                    {{ category.label }}
+                  </button>
+                </div>
+
+                <!-- Font Search -->
                 <q-input
-                  v-model="strokeColor"
-                  type="color"
-                  dense
+                  v-model="fontSearchQuery"
+                  placeholder="Search fonts..."
                   outlined
-                  size="sm"
-                  @update:model-value="handleStrokeColorChange"
-                />
-                <div class="flex items-center gap-2">
+                  dense
+                  class="text-sm"
+                  bg-color="white"
+                >
+                  <template #prepend>
+                    <q-icon name="search" size="18px" class="text-gray-400" />
+                  </template>
+                </q-input>
+
+                <!-- Font Grid -->
+                <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                  <button
+                    v-for="font in filteredFonts"
+                    :key="font.value"
+                    class="p-3 text-left border rounded-lg transition-all duration-200 touch-manipulation min-h-[50px] flex items-center justify-center"
+                    :class="selectedFont === font.value
+                      ? 'border-purple-500 bg-purple-50'
+                      : 'border-gray-300 bg-white active:border-purple-400'"
+                    @click="handleFontChange(font.value)"
+                  >
+                    <div class="text-sm font-medium text-gray-900 truncate" :style="{ fontFamily: font.value }">
+                      {{ font.label }}
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Font Size (Mobile) -->
+              <div class="space-y-3">
+                <h5 class="text-base font-bold text-gray-900">Size</h5>
+
+                <!-- Font Size Slider -->
+                <div class="flex items-center gap-3">
                   <q-slider
-                    v-model="strokeWidth"
-                    :min="1"
-                    :max="10"
+                    v-model="fontSize"
+                    :min="12"
+                    :max="200"
                     :step="1"
                     color="purple"
+                    track-size="4px"
+                    thumb-size="20px"
                     class="flex-1"
-                    @update:model-value="handleStrokeWidthChange"
+                    @update:model-value="handleFontSizeChange"
                   />
-                  <span class="text-xs text-gray-500 w-8">{{ strokeWidth }}px</span>
+                  <div class="min-w-[60px] px-3 py-2 bg-gray-100 rounded-lg text-center">
+                    <span class="text-sm font-semibold text-gray-900">{{ fontSize }}</span>
+                  </div>
+                </div>
+
+                <!-- Font Size Presets -->
+                <div class="grid grid-cols-3 gap-2">
+                  <button
+                    v-for="preset in fontSizePresets"
+                    :key="preset.label"
+                    class="px-3 py-2 text-xs font-semibold rounded-lg transition-all duration-200 touch-manipulation border"
+                    :class="isFontSizePresetActive(preset.value)
+                      ? 'bg-purple-500 text-white border-purple-500'
+                      : 'bg-white text-gray-700 border-gray-300 active:border-purple-400'"
+                    @click="handleFontSizePreset(preset.value)"
+                  >
+                    {{ preset.label }}
+                  </button>
                 </div>
               </div>
-            </div>
 
-            <!-- Shadow -->
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <label class="text-xs font-medium text-gray-600 uppercase tracking-wide">Shadow</label>
-                <q-toggle
-                  v-model="shadowEnabled"
-                  color="purple"
-                  size="sm"
-                  @update:model-value="toggleShadow"
-                />
+              <!-- Text Color (Mobile) -->
+              <div class="space-y-3">
+                <h5 class="text-base font-bold text-gray-900">Color</h5>
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-lg border-2 border-gray-300 overflow-hidden shadow-sm">
+                    <input
+                      v-model="textColor"
+                      type="color"
+                      class="w-full h-full cursor-pointer"
+                      @input="handleColorChange"
+                    />
+                  </div>
+                  <span class="text-sm text-gray-600 font-mono">{{ textColor }}</span>
+                </div>
               </div>
-              <div v-if="shadowEnabled" class="space-y-2 pl-4">
-                <q-input
-                  v-model="shadowColor"
-                  type="color"
-                  dense
-                  outlined
-                  size="sm"
-                  @update:model-value="handleShadowColorChange"
-                />
-                <div class="space-y-1">
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500 w-12">Blur:</span>
+
+              <!-- Text Formatting -->
+              <div class="space-y-3">
+                <h5 class="text-base font-bold text-gray-900">Format</h5>
+                <div class="grid grid-cols-3 gap-2">
+                  <button
+                    class="h-12 rounded-lg flex items-center justify-center gap-1.5 transition-all touch-manipulation border"
+                    :class="isBold
+                      ? 'bg-purple-500 text-white border-purple-500'
+                      : 'bg-white border-gray-300 text-gray-700 active:border-purple-400'"
+                    @click="toggleBold"
+                  >
+                    <q-icon name="format_bold" size="18px" />
+                    <span class="text-xs font-semibold">Bold</span>
+                  </button>
+                  <button
+                    class="h-12 rounded-lg flex items-center justify-center gap-1.5 transition-all touch-manipulation border"
+                    :class="isItalic
+                      ? 'bg-purple-500 text-white border-purple-500'
+                      : 'bg-white border-gray-300 text-gray-700 active:border-purple-400'"
+                    @click="toggleItalic"
+                  >
+                    <q-icon name="format_italic" size="18px" />
+                    <span class="text-xs font-semibold">Italic</span>
+                  </button>
+                  <button
+                    class="h-12 rounded-lg flex items-center justify-center gap-1.5 transition-all touch-manipulation border"
+                    :class="isUnderline
+                      ? 'bg-purple-500 text-white border-purple-500'
+                      : 'bg-white border-gray-300 text-gray-700 active:border-purple-400'"
+                    @click="toggleUnderline"
+                  >
+                    <q-icon name="format_underlined" size="18px" />
+                    <span class="text-xs font-semibold">Underline</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="h-px bg-gray-200"></div>
+
+              <!-- Spacing Section -->
+              <div class="space-y-4">
+                <h5 class="text-base font-bold text-gray-900">Spacing</h5>
+
+                <!-- Letter Spacing -->
+                <div class="space-y-2">
+                  <label class="text-sm text-gray-700 font-medium">Letter spacing</label>
+                  <div class="flex items-center gap-3">
                     <q-slider
-                      v-model="shadowBlur"
-                      :min="0"
+                      v-model="letterSpacing"
+                      :min="-5"
                       :max="20"
-                      :step="1"
+                      :step="0.5"
                       color="purple"
+                      track-size="4px"
+                      thumb-size="20px"
                       class="flex-1"
-                      @update:model-value="handleShadowBlurChange"
+                      @update:model-value="handleLetterSpacingChange"
                     />
-                    <span class="text-xs text-gray-500 w-8">{{ shadowBlur }}px</span>
+                    <div class="min-w-[50px] px-3 py-1.5 bg-gray-100 rounded-lg text-center">
+                      <span class="text-sm font-semibold text-gray-900">{{ letterSpacing }}</span>
+                    </div>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500 w-12">X:</span>
+                </div>
+
+                <!-- Line Spacing -->
+                <div class="space-y-2">
+                  <label class="text-sm text-gray-700 font-medium">Line spacing</label>
+                  <div class="flex items-center gap-3">
                     <q-slider
-                      v-model="shadowOffsetX"
-                      :min="-20"
-                      :max="20"
-                      :step="1"
-                      color="purple"
-                      class="flex-1"
-                      @update:model-value="handleShadowOffsetXChange"
-                    />
-                    <span class="text-xs text-gray-500 w-8">{{ shadowOffsetX }}px</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500 w-12">Y:</span>
-                    <q-slider
-                      v-model="shadowOffsetY"
-                      :min="-20"
-                      :max="20"
-                      :step="1"
-                      color="purple"
-                      class="flex-1"
-                      @update:model-value="handleShadowOffsetYChange"
-                    />
-                    <span class="text-xs text-gray-500 w-8">{{ shadowOffsetY }}px</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500 w-12">Opacity:</span>
-                    <q-slider
-                      v-model="shadowOpacity"
-                      :min="0"
-                      :max="1"
+                      v-model="lineHeight"
+                      :min="0.5"
+                      :max="3"
                       :step="0.1"
                       color="purple"
+                      track-size="4px"
+                      thumb-size="20px"
                       class="flex-1"
-                      @update:model-value="handleShadowOpacityChange"
+                      @update:model-value="handleLineHeightChange"
                     />
-                    <span class="text-xs text-gray-500 w-8">{{ Math.round(shadowOpacity * 100) }}%</span>
+                    <div class="min-w-[50px] px-3 py-1.5 bg-gray-100 rounded-lg text-center">
+                      <span class="text-sm font-semibold text-gray-900">{{ lineHeight.toFixed(1) }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Engrave -->
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <label class="text-xs font-medium text-gray-600 uppercase tracking-wide">Engrave Effect</label>
-                <q-toggle
-                  v-model="engraveEnabled"
-                  color="purple"
-                  size="sm"
-                  @update:model-value="toggleEngrave"
-                />
-              </div>
-              <div class="text-xs text-gray-500">
-                Creates a knockout effect where text cuts through the background
+              <!-- Divider -->
+              <div class="h-px bg-gray-200 my-6"></div>
+
+              <!-- Effects Section -->
+              <div class="space-y-4">
+                <h5 class="text-base font-bold text-gray-900">Effects</h5>
+
+                <!-- Stroke -->
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between">
+                    <label class="text-sm text-gray-700 font-medium">Stroke</label>
+                    <q-toggle
+                      v-model="strokeEnabled"
+                      color="purple"
+                      size="md"
+                      @update:model-value="toggleStroke"
+                    />
+                  </div>
+                  <div v-if="strokeEnabled" class="space-y-3 pl-4 border-l-2 border-purple-200">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-lg border-2 border-gray-300 overflow-hidden cursor-pointer shadow-sm">
+                        <input
+                          v-model="strokeColor"
+                          type="color"
+                          class="w-full h-full cursor-pointer"
+                          @input="handleStrokeColorChange"
+                        />
+                      </div>
+                      <span class="text-sm text-gray-600">Color</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <q-slider
+                        v-model="strokeWidth"
+                        :min="1"
+                        :max="10"
+                        :step="1"
+                        color="purple"
+                        track-size="4px"
+                        thumb-size="20px"
+                        class="flex-1"
+                        @update:model-value="handleStrokeWidthChange"
+                      />
+                      <div class="min-w-[50px] px-3 py-1.5 bg-gray-100 rounded-lg text-center">
+                        <span class="text-sm font-semibold text-gray-900">{{ strokeWidth }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Shadow -->
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between">
+                    <label class="text-sm text-gray-700 font-medium">Shadow</label>
+                    <q-toggle
+                      v-model="shadowEnabled"
+                      color="purple"
+                      size="md"
+                      @update:model-value="toggleShadow"
+                    />
+                  </div>
+                  <div v-if="shadowEnabled" class="space-y-3 pl-4 border-l-2 border-purple-200">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-lg border-2 border-gray-300 overflow-hidden cursor-pointer shadow-sm">
+                        <input
+                          v-model="shadowColor"
+                          type="color"
+                          class="w-full h-full cursor-pointer"
+                          @input="handleShadowColorChange"
+                        />
+                      </div>
+                      <span class="text-sm text-gray-600">Color</span>
+                    </div>
+                    <div class="space-y-2">
+                      <span class="text-xs text-gray-500">Blur</span>
+                      <div class="flex items-center gap-3">
+                        <q-slider
+                          v-model="shadowBlur"
+                          :min="0"
+                          :max="20"
+                          :step="1"
+                          color="purple"
+                          track-size="4px"
+                          thumb-size="20px"
+                          class="flex-1"
+                          @update:model-value="handleShadowBlurChange"
+                        />
+                        <div class="min-w-[50px] px-3 py-1.5 bg-gray-100 rounded-lg text-center">
+                          <span class="text-sm font-semibold text-gray-900">{{ shadowBlur }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="space-y-2">
+                      <span class="text-xs text-gray-500">Offset X</span>
+                      <div class="flex items-center gap-3">
+                        <q-slider
+                          v-model="shadowOffsetX"
+                          :min="-20"
+                          :max="20"
+                          :step="1"
+                          color="purple"
+                          track-size="4px"
+                          thumb-size="20px"
+                          class="flex-1"
+                          @update:model-value="handleShadowOffsetXChange"
+                        />
+                        <div class="min-w-[50px] px-3 py-1.5 bg-gray-100 rounded-lg text-center">
+                          <span class="text-sm font-semibold text-gray-900">{{ shadowOffsetX }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="space-y-2">
+                      <span class="text-xs text-gray-500">Offset Y</span>
+                      <div class="flex items-center gap-3">
+                        <q-slider
+                          v-model="shadowOffsetY"
+                          :min="-20"
+                          :max="20"
+                          :step="1"
+                          color="purple"
+                          track-size="4px"
+                          thumb-size="20px"
+                          class="flex-1"
+                          @update:model-value="handleShadowOffsetYChange"
+                        />
+                        <div class="min-w-[50px] px-3 py-1.5 bg-gray-100 rounded-lg text-center">
+                          <span class="text-sm font-semibold text-gray-900">{{ shadowOffsetY }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Engrave -->
+                <div class="flex items-center justify-between">
+                  <div>
+                    <label class="text-sm text-gray-700 font-medium">Engrave</label>
+                    <p class="text-xs text-gray-500 mt-0.5">Knockout effect</p>
+                  </div>
+                  <q-toggle
+                    v-model="engraveEnabled"
+                    color="purple"
+                    size="md"
+                    @update:model-value="toggleEngrave"
+                  />
+                </div>
               </div>
             </div>
+          </div>
 
-            <!-- Letter Spacing -->
-            <div class="space-y-2">
-              <label class="text-xs font-medium text-gray-600 uppercase tracking-wide">Letter Spacing</label>
-              <div class="flex items-center gap-2">
-                <q-slider
-                  v-model="letterSpacing"
-                  :min="-5"
-                  :max="20"
-                  :step="0.5"
-                  color="purple"
-                  class="flex-1"
-                  @update:model-value="handleLetterSpacingChange"
-                />
-                <span class="text-xs text-gray-500 w-12">{{ letterSpacing }}px</span>
+          <!-- Draw Content -->
+          <div v-else-if="activeMenu === 'draw'" class="mobile-content pt-4">
+            <div class="space-y-6">
+              <!-- Draw Tool Activation -->
+              <div class="space-y-3">
+                <div class="text-center">
+                  <div class="text-sm text-gray-600 mb-3">
+                    {{ drawToolActive ? 'Draw tool is active - tap canvas to draw' : 'Activate draw tool to start drawing' }}
+                  </div>
+                      <!-- Action Buttons -->
+              <div class="grid grid-cols-2 gap-3">
+                <button 
+                  class="flex items-center justify-center gap-2 p-4 border-2 border-red-300 bg-red-50 text-red-700 rounded-xl transition-all duration-200 touch-manipulation active:bg-red-100"
+                  @click="clearDrawing" 
+                  title="Clear drawing"
+                >
+                  <q-icon name="mdi-delete-outline" size="18px" />
+                  <span class="font-semibold">Clear</span>
+                </button>
+                <button 
+                  class="flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl transition-all duration-200 touch-manipulation active:from-purple-700 active:to-blue-700"
+                  @click="finishDrawing" 
+                  title="Finish drawing"
+                >
+                  <q-icon name="mdi-check" size="18px" />
+                  <span class="font-semibold">Done</span>
+                </button>
               </div>
-            </div>
+                </div>
+              </div>
 
-            <!-- Line Height -->
-            <div class="space-y-2">
-              <label class="text-xs font-medium text-gray-600 uppercase tracking-wide">Line Height</label>
-              <div class="flex items-center gap-2">
-                <q-slider
-                  v-model="lineHeight"
-                  :min="0.5"
-                  :max="3"
-                  :step="0.1"
-                  color="purple"
-                  class="flex-1"
-                  @update:model-value="handleLineHeightChange"
-                />
-                <span class="text-xs text-gray-500 w-12">{{ lineHeight }}x</span>
+              <div class="h-px bg-gray-200"></div>
+
+              <div class="text-sm text-gray-600 mb-4">Customize your drawing tool:</div>
+              
+              <!-- Brush Size Section -->
+              <div class="space-y-4">
+                <div class="flex items-center gap-2">
+                  <q-icon name="mdi-brush" size="16px" class="text-purple-600" />
+                  <h5 class="text-base font-bold text-gray-900">Brush Size</h5>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                  <button
+                    v-for="size in brushSizes"
+                    :key="size.value"
+                    class="p-4 border-2 rounded-xl transition-all duration-200 touch-manipulation flex flex-col items-center gap-2"
+                    :class="currentBrushSize === size.value
+                      ? 'border-purple-500 bg-purple-50'
+                      : 'border-gray-300 bg-white active:border-purple-400'"
+                    @click="updateBrushSize(size.value)"
+                    :title="size.label"
+                  >
+                    <div 
+                      class="rounded-full bg-purple-600 transition-all"
+                      :class="{
+                        'w-3 h-3': size.value === 2,
+                        'w-4 h-4': size.value === 5,
+                        'w-6 h-6': size.value === 10,
+                        'w-8 h-8': size.value === 15
+                      }"
+                    ></div>
+                    <span class="text-xs font-semibold text-gray-700">{{ size.label }}</span>
+                  </button>
+                </div>
               </div>
+
+              <div class="h-px bg-gray-200"></div>
+
+              <!-- Color Section -->
+              <div class="space-y-4">
+                <div class="flex items-center gap-2">
+                  <q-icon name="mdi-palette" size="16px" class="text-purple-600" />
+                  <h5 class="text-base font-bold text-gray-900">Color</h5>
+                </div>
+                
+                <!-- Color Presets -->
+                <div class="grid grid-cols-5 gap-3">
+                  <button
+                    v-for="color in colorPresets"
+                    :key="color"
+                    class="w-12 h-12 rounded-lg border-2 transition-all duration-200 touch-manipulation"
+                    :class="currentBrushColor === color
+                      ? 'border-purple-500 scale-110'
+                      : 'border-gray-300 active:border-purple-400'"
+                    :style="{ backgroundColor: color }"
+                    @click="updateBrushColor(color)"
+                    :title="color"
+                  />
+                </div>
+                
+                <!-- Custom Color -->
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div class="w-12 h-12 rounded-lg border-2 border-gray-300 overflow-hidden">
+                    <input
+                      type="color"
+                      :value="currentBrushColor"
+                      @input="updateBrushColor($event.target.value)"
+                      class="w-full h-full cursor-pointer"
+                      title="Custom color"
+                    />
+                  </div>
+                  <span class="text-sm text-gray-600">Custom Color</span>
+                </div>
+              </div>
+
+              <div class="h-px bg-gray-200"></div>
+
+         
             </div>
           </div>
         </div>
@@ -812,7 +1152,6 @@ import {
   Layers
 } from 'lucide-vue-next';
 
-// Lazy load EmojiPicker only on client-side
 let EmojiPicker = null;
 if (process.client) {
   EmojiPicker = (await import('vue3-emoji-picker')).default;
@@ -847,7 +1186,7 @@ defineProps({
 });
 
 const emit = defineEmits([
-  'upload', 'activate-text-tool', 'activate-draw-tool', 'add-emoji', 'checkout', 'add-image', 
+  'upload', 'activate-text-tool', 'activate-draw-tool', 'deactivate-draw-tool', 'add-emoji', 'checkout', 'add-image', 
   'open-advanced-text', 'add-monogram', 'update-monogram', 'switch-product',
   'font-change', 'font-size-change', 'color-change', 'bold-change', 'italic-change', 'underline-change',
   'stroke-toggle', 'stroke-color-change', 'stroke-width-change',
@@ -881,18 +1220,15 @@ const lineHeight = ref(1.2);
 const fontSearchQuery = ref('');
 const selectedFontCategory = ref('all');
 
-// Font categories - dynamic based on selected element
 const fontCategories = computed(() => {
   const selectedElement = editorStore.selectedElement;
 
-  // For monograms, show monogram category only
   if (selectedElement && selectedElement.type === 'monogram') {
     return [
       { label: 'MONOGRAM', value: 'monogram' },
     ];
   }
 
-  // For regular text, show all text categories
   return [
     { label: 'ALL FONTS', value: 'all' },
     { label: 'SANS SERIF', value: 'sans-serif' },
@@ -901,7 +1237,6 @@ const fontCategories = computed(() => {
   ];
 });
 
-// Font size presets
 const fontSizePresets = [
   { label: 'Small', value: 12 },
   { label: 'Medium', value: 16 },
@@ -911,21 +1246,17 @@ const fontSizePresets = [
   { label: 'Huge', value: 64 },
 ];
 
-// Font options based on selected element type
 const fontOptions = computed(() => {
   const selectedElement = editorStore.selectedElement;
 
-  // Check if selected element is a monogram
   if (selectedElement && selectedElement.type === 'monogram') {
-    // Return monogram fonts with consistent structure
     return CUSTOM_MONOGRAM_FONTS.map(font => ({
       label: font.label,
       value: font.value,
-      category: 'monogram' // All monogram fonts in one category
+      category: 'monogram'
     }));
   }
 
-  // Return regular text fonts for text elements and default
   return AVAILABLE_FONTS.map(font => ({
     label: font.label,
     value: font.value,
@@ -992,12 +1323,10 @@ const filteredFonts = computed(() => {
   return fonts;
 });
 
-// Check if font size preset is active
 const isFontSizePresetActive = (presetValue) => {
   return fontSize.value === presetValue;
 };
 
-// Watch for changes in textEditorStore to sync with selected element
 watch(() => textEditorStore.selectedFont, (newFont) => {
   if (newFont && newFont !== selectedFont.value) {
     selectedFont.value = newFont;
@@ -1034,7 +1363,6 @@ watch(() => textEditorStore.selectedStroke, (newStroke) => {
     strokeColor.value = newStroke.color || '#FFFFFF';
     strokeWidth.value = newStroke.width || 2;
   } else {
-    // Reset to defaults if no stroke object
     strokeEnabled.value = false;
     strokeColor.value = '#FFFFFF';
     strokeWidth.value = 2;
@@ -1050,7 +1378,6 @@ watch(() => textEditorStore.selectedShadow, (newShadow) => {
     shadowOffsetY.value = newShadow.offsetY || 2;
     shadowOpacity.value = newShadow.opacity || 0.5;
   } else {
-    // Reset to defaults if no shadow object
     shadowEnabled.value = false;
     shadowColor.value = '#000000';
     shadowBlur.value = 5;
@@ -1072,9 +1399,7 @@ watch(() => textEditorStore.selectedLineHeight, (newHeight) => {
   lineHeight.value = newHeight;
 }, { immediate: true });
 
-// Watch for element type changes to reset font category
 watch(() => editorStore.selectedElement?.type, (newType, oldType) => {
-  // Reset category when switching between text and monogram
   if (newType === 'monogram') {
     selectedFontCategory.value = 'monogram';
   } else if (oldType === 'monogram' && newType !== 'monogram') {
@@ -1083,7 +1408,6 @@ watch(() => editorStore.selectedElement?.type, (newType, oldType) => {
 });
 
 const closeMenu = () => {
-  // Deactivate draw tool when closing draw panel
   if (activeMenu.value === 'draw') {
     drawToolStore.isActive = false;
   }
@@ -1093,13 +1417,11 @@ const closeMenu = () => {
 const toggleMenu = (menu) => {
   if (activeMenu.value === menu) {
     activeMenu.value = null;
-    // Deactivate draw tool when closing draw panel
     if (menu === 'draw') {
       drawToolStore.isActive = false;
     }
   } else {
     activeMenu.value = menu;
-    // Activate draw tool when opening draw panel
     if (menu === 'draw') {
       drawToolStore.isActive = true;
       emit('activate-draw-tool');
@@ -1251,6 +1573,10 @@ const activateDrawTool = () => {
   emit('activate-draw-tool');
 };
 
+const deactivateDrawTool = () => {
+  emit('deactivate-draw-tool');
+};
+
 const handleFileSelected = (file) => {
   if (file) {
     emit('upload', file);
@@ -1310,10 +1636,13 @@ const finishDrawing = () => {
 };
 
 watch(() => drawToolStore.isActive, (isActive) => {
-  if (isActive && activeMenu.value !== 'draw') {
-    activeMenu.value = 'draw'
-  } else if (!isActive && activeMenu.value === 'draw') {
-    activeMenu.value = null
+  // Only auto-open draw menu on desktop, not mobile
+  if (!isMobile.value) {
+    if (isActive && activeMenu.value !== 'draw') {
+      activeMenu.value = 'draw'
+    } else if (!isActive && activeMenu.value === 'draw') {
+      activeMenu.value = null
+    }
   }
 })
 
@@ -1643,5 +1972,28 @@ watch(() => drawToolStore.isActive, (isActive) => {
   background: linear-gradient(135deg, #1a9ca0 0%, #3d4758 100%);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(30, 173, 176, 0.4);
+}
+
+/* Mobile color picker styling */
+input[type="color"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border: none;
+  cursor: pointer;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 6px;
+}
+
+input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: 6px;
 }
 </style>

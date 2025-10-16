@@ -1,14 +1,15 @@
 <template>
-  <div class="top-bar">
-    <div class="top-bar-left">
-      <div class="project-title-container">
-        <div class="title-icon">
-          <q-icon name="mdi-palette" size="20px" />
+  <div class="fixed top-0 left-0 right-0 h-14 sm:h-16 md:h-[72px] bg-gradient-to-br from-white/95 to-gray-50/95 backdrop-blur-lg border-b border-[#1EADB0]/10 z-50 flex items-center justify-between px-2 sm:px-4 md:px-8 shadow-lg">
+    <!-- Left Section -->
+    <div class="flex items-center flex-1 min-w-0">
+      <div class="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#1EADB0]/5 to-[#4B5574]/5 border border-[#1EADB0]/10 transition-all duration-300 hover:from-[#1EADB0]/10 hover:to-[#4B5574]/10 hover:border-[#1EADB0]/20 hover:shadow-md group">
+        <div class="hidden sm:flex items-center justify-center text-[#1EADB0]">
+          <q-icon name="mdi-palette" size="18px" class="sm:size-5" />
         </div>
         <input
           v-model="designName"
           type="text"
-          class="project-title-input"
+          class="b-0 outline-none bg-transparent text-xs sm:text-sm md:text-base font-semibold text-gray-800 w-16 sm:w-24 md:w-48 focus:cursor-text cursor-pointer"
           placeholder="Untitled Design"
           @blur="handleDesignNameChange"
           @keydown.enter="$event.target.blur()"
@@ -19,30 +20,32 @@
           round
           icon="edit"
           size="xs"
-          class="edit-icon"
+          class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[#1EADB0] hidden sm:inline-flex"
         >
           <q-tooltip>Rename</q-tooltip>
         </q-btn>
       </div>
     </div>
 
-    <div class="top-bar-center">
-      <div class="zoom-controls">
-        <div class="zoom-section">
+    <!-- Center Section - Zoom & History Controls -->
+    <div class="flex items-center justify-center">
+      <div class="flex items-center gap-2 sm:gap-4 bg-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
+        <!-- Zoom Controls (hidden on mobile) -->
+        <div class="hidden sm:flex items-center gap-1 sm:gap-2">
           <q-btn
             flat
             dense
             round
             icon="remove"
             size="sm"
-            class="zoom-btn"
+            class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-[#1EADB0] hover:bg-[#1EADB0]/10 transition-all"
             :disable="zoom <= 0.25"
             @click="$emit('zoom-out')"
           >
             <q-tooltip>Zoom Out</q-tooltip>
           </q-btn>
-          <div class="zoom-display">
-            <span class="zoom-text">{{ zoomPercentage }}%</span>
+          <div class="bg-gradient-to-br from-[#1EADB0]/10 to-[#4B5574]/10 px-2 sm:px-3 py-1 rounded-md border border-[#1EADB0]/20">
+            <span class="text-xs sm:text-sm font-semibold text-[#1EADB0] min-w-[40px] sm:min-w-[48px] text-center select-none">{{ zoomPercentage }}%</span>
           </div>
           <q-btn
             flat
@@ -50,22 +53,23 @@
             round
             icon="add"
             size="sm"
-            class="zoom-btn"
+            class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-[#1EADB0] hover:bg-[#1EADB0]/10 transition-all"
             :disable="zoom >= 2"
             @click="$emit('zoom-in')"
           >
             <q-tooltip>Zoom In</q-tooltip>
           </q-btn>
         </div>
-        
-        <div class="history-controls">
+
+        <!-- History Controls -->
+        <div class="flex items-center gap-0.5 sm:gap-1">
           <q-btn
             flat
             dense
             round
             icon="undo"
             size="sm"
-            class="history-btn"
+            class="w-8 h-8 rounded-lg text-gray-600 hover:bg-[#1EADB0]/10 hover:text-[#1EADB0] transition-all disabled:text-gray-300"
             :disable="!canUndo"
             @click="$emit('undo')"
           >
@@ -77,7 +81,7 @@
             round
             icon="redo"
             size="sm"
-            class="history-btn"
+            class="w-8 h-8 rounded-lg text-gray-600 hover:bg-[#1EADB0]/10 hover:text-[#1EADB0] transition-all disabled:text-gray-300"
             :disable="!canRedo"
             @click="$emit('redo')"
           >
@@ -87,15 +91,17 @@
       </div>
     </div>
 
-    <div class="top-bar-right">
+    <!-- Right Section -->
+    <div class="flex items-center justify-end flex-1 gap-1.5 sm:gap-2 md:gap-3">
+      <!-- Share Button - Icon only on mobile, with label on desktop -->
       <q-btn
         flat
         no-caps
         icon="link"
-        label="Share"
-        class="share-btn"
+        class="text-gray-600 text-xs sm:text-sm font-medium px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-gray-100 hover:text-gray-800"
         @click="$emit('share-design')"
       >
+        <span class="hidden md:inline ml-1">Share</span>
         <q-tooltip>Share Design Link</q-tooltip>
       </q-btn>
 
@@ -103,7 +109,7 @@
         flat
         no-caps
         icon="download"
-        class="download-btn"
+        class="text-gray-600 text-xs sm:text-sm font-medium px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-gray-100 hover:text-gray-800"
         @click="$emit('download')"
       >
         <q-tooltip>Download Design</q-tooltip>
@@ -113,7 +119,7 @@
         unelevated
         no-caps
         label="Done"
-        class="publish-btn"
+        class="bg-gradient-to-br from-purple-600 to-indigo-500 text-white text-xs sm:text-sm font-semibold px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg shadow-md shadow-purple-500/30 hover:shadow-lg hover:shadow-purple-500/40 hover:-translate-y-0.5 transition-all"
         @click="$emit('publish')"
       />
     </div>
@@ -154,231 +160,3 @@ const handleDesignNameChange = () => {
   emit('design-name-change', name)
 }
 </script>
-
-<style scoped>
-.top-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 72px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(30, 173, 176, 0.1);
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 32px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* Left Section */
-.top-bar-left {
-  flex: 1;
-  display: flex;
-  align-items: center;
-}
-
-.project-title-container {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(30, 173, 176, 0.05) 0%, rgba(75, 85, 116, 0.05) 100%);
-  border: 1px solid rgba(30, 173, 176, 0.1);
-  transition: all 0.3s ease;
-}
-
-.project-title-container:hover {
-  background: linear-gradient(135deg, rgba(30, 173, 176, 0.1) 0%, rgba(75, 85, 116, 0.1) 100%);
-  border-color: rgba(30, 173, 176, 0.2);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(30, 173, 176, 0.15);
-}
-
-.title-icon {
-  color: #1EADB0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.project-title-input {
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 16px;
-  font-weight: 600;
-  color: #2d3748;
-  width: 200px;
-  cursor: pointer;
-}
-
-.project-title-input:focus {
-  cursor: text;
-}
-
-.edit-icon {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  color: #1EADB0;
-}
-
-.project-title-container:hover .edit-icon {
-  opacity: 1;
-}
-
-/* Center Section */
-.top-bar-center {
-  flex: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.zoom-controls {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: white;
-  padding: 8px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.zoom-section {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.zoom-display {
-  background: linear-gradient(135deg, rgba(30, 173, 176, 0.1) 0%, rgba(75, 85, 116, 0.1) 100%);
-  padding: 4px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(30, 173, 176, 0.2);
-}
-
-.zoom-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  color: #1EADB0;
-  transition: all 0.2s ease;
-}
-
-.zoom-btn:hover:not([disabled]) {
-  background: rgba(30, 173, 176, 0.1);
-  transform: scale(1.05);
-}
-
-.zoom-btn[disabled] {
-  color: #d1d5db;
-}
-
-.zoom-text {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1EADB0;
-  min-width: 48px;
-  text-align: center;
-  user-select: none;
-}
-
-.history-controls {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.history-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  color: #6b7280;
-  transition: all 0.2s ease;
-}
-
-.history-btn:hover:not([disabled]) {
-  background: rgba(30, 173, 176, 0.1);
-  color: #1EADB0;
-  transform: scale(1.05);
-}
-
-.history-btn[disabled] {
-  color: #d1d5db;
-}
-
-/* Right Section */
-.top-bar-right {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.action-btn[disabled] {
-  opacity: 0.4;
-}
-
-.share-btn {
-  color: #6b7280;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 8px;
-}
-
-.share-btn:hover {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.download-btn {
-  color: #6b7280;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 12px;
-  border-radius: 8px;
-}
-
-.download-btn:hover {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.publish-btn {
-  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 10px 24px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.3);
-  transition: all 0.2s ease;
-}
-
-.publish-btn:hover {
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
-  transform: translateY(-1px);
-}
-
-@media (max-width: 768px) {
-  .top-bar {
-    left: 0;
-    padding: 0 16px;
-  }
-
-  .project-title-input {
-    width: 120px;
-  }
-
-  .share-btn span {
-    display: none;
-  }
-}
-</style>

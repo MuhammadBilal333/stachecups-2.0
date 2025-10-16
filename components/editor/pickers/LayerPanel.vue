@@ -17,82 +17,6 @@
       </div>
     </div>
 
-    <!-- Alignment Tools -->
-    <div class="alignment-tools">
-      <div class="tool-group">
-        <label class="tool-label">Align:</label>
-        <q-btn-group flat dense>
-          <q-btn
-            flat
-            dense
-            size="sm"
-            icon="format_align_left"
-            @click="alignElement('left')"
-            :disable="!hasSelection"
-          >
-            <q-tooltip>Align Left</q-tooltip>
-          </q-btn>
-          <q-btn
-            flat
-            dense
-            size="sm"
-            icon="format_align_center"
-            @click="alignElement('center')"
-            :disable="!hasSelection"
-          >
-            <q-tooltip>Align Center</q-tooltip>
-          </q-btn>
-          <q-btn
-            flat
-            dense
-            size="sm"
-            icon="format_align_right"
-            @click="alignElement('right')"
-            :disable="!hasSelection"
-          >
-            <q-tooltip>Align Right</q-tooltip>
-          </q-btn>
-        </q-btn-group>
-      </div>
-
-      <div class="tool-group">
-        <q-btn-group flat dense>
-          <q-btn
-            flat
-            dense
-            size="sm"
-            icon="vertical_align_top"
-            @click="alignElement('top')"
-            :disable="!hasSelection"
-          >
-            <q-tooltip>Align Top</q-tooltip>
-          </q-btn>
-          <q-btn
-            flat
-            dense
-            size="sm"
-            icon="vertical_align_center"
-            @click="alignElement('middle')"
-            :disable="!hasSelection"
-          >
-            <q-tooltip>Align Middle</q-tooltip>
-          </q-btn>
-          <q-btn
-            flat
-            dense
-            size="sm"
-            icon="vertical_align_bottom"
-            @click="alignElement('bottom')"
-            :disable="!hasSelection"
-          >
-            <q-tooltip>Align Bottom</q-tooltip>
-          </q-btn>
-        </q-btn-group>
-      </div>
-    </div>
-
-    <q-separator class="q-my-sm" />
-
     <!-- Layer List -->
     <div class="layer-list" v-if="layers.length > 0">
       <draggable
@@ -128,8 +52,46 @@
 
             <!-- Layer Info -->
             <div class="layer-info">
-              <div class="layer-name">{{ getLayerName(layer) }}</div>
+              <!-- Editable Layer Name -->
+              <div
+                v-if="editingLayerId !== layer.id"
+                class="layer-name"
+                @dblclick.stop="startEditingName(layer)"
+                :title="'Double-click to rename'"
+              >
+                {{ getLayerName(layer) }}
+              </div>
+              <input
+                v-else
+                v-model="editingLayerName"
+                class="layer-name-input"
+                @blur="finishEditingName(layer)"
+                @keydown.enter="finishEditingName(layer)"
+                @keydown.escape="cancelEditingName"
+                @click.stop
+                ref="layerNameInput"
+                type="text"
+                maxlength="50"
+              />
               <div class="layer-type">{{ getLayerType(layer) }}</div>
+
+              <!-- Opacity Slider (shown on hover or when selected) -->
+              <div v-if="isSelected(layer.id)" class="layer-opacity-control">
+                <div class="flex items-center gap-2">
+                  <q-icon name="opacity" size="14px" class="text-gray-500" />
+                  <q-slider
+                    :model-value="layer.opacity ?? 1"
+                    :min="0"
+                    :max="1"
+                    :step="0.05"
+                    color="purple"
+                    class="flex-1"
+                    dense
+                    @update:model-value="(val) => updateLayerOpacity(layer.id, val)"
+                  />
+                  <span class="text-xs text-gray-600 w-10">{{ Math.round((layer.opacity ?? 1) * 100) }}%</span>
+                </div>
+              </div>
             </div>
 
             <!-- Layer Actions -->
@@ -226,7 +188,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 import { useEditorStore } from '~/store/editor'
 import draggable from 'vuedraggable'
@@ -234,19 +196,33 @@ import draggable from 'vuedraggable'
 const $q = useQuasar()
 const editorStore = useEditorStore()
 
-// Computed
-const layers = computed({
-  get: () => editorStore.layeredElements,
-  set: (value) => {
-    // Handle drag reorder - reverse back to original order
-    const reversedOrder = [...value].reverse()
+const editingLayerId = ref(null)
+const editingLayerName = ref('')
+const layerNameInput = ref(null)
 
-    // Update elements array directly (this maintains reactivity)
+const layers = computed({
+  get: () => {
+    return [...editorStore.elements]
+      .sort((a, b) => {
+        const aIndex = a.zIndex ?? editorStore.elements.indexOf(a)
+        const bIndex = b.zIndex ?? editorStore.elements.indexOf(b)
+        return bIndex - aIndex
+      })
+  },
+  set: (value) => {
+    const updatedElements = value.map((el, index) => ({
+      ...el,
+      zIndex: value.length - index - 1
+    }))
+
+    const sortedElements = [...updatedElements].sort((a, b) =>
+      (a.zIndex ?? 0) - (b.zIndex ?? 0)
+    )
+
     editorStore.$patch({
-      elements: reversedOrder
+      elements: sortedElements
     })
 
-    // Force canvas refresh and emit update
     nextTick(() => {
       forceCanvasRefresh()
       emit('layer-update')
@@ -254,9 +230,6 @@ const layers = computed({
   },
 })
 
-const hasSelection = computed(() => !!editorStore.selectedElementId)
-
-// Layer Information
 const getLayerIcon = (layer) => {
   switch (layer.type) {
     case 'image':
@@ -273,6 +246,10 @@ const getLayerIcon = (layer) => {
 }
 
 const getLayerName = (layer) => {
+  if (layer.name && layer.name.trim()) {
+    return layer.name
+  }
+
   switch (layer.type) {
     case 'image':
       return layer.isDrawing ? 'Drawing' : layer.isSticker ? 'Sticker' : 'Image'
@@ -303,12 +280,10 @@ const getLayerType = (layer) => {
   }
 }
 
-// Layer State
 const isSelected = (id) => editorStore.selectedElementId === id
 const isLocked = (id) => editorStore.isElementLocked(id)
 const isHidden = (id) => editorStore.isElementHidden(id)
 
-// Layer Actions
 const selectLayer = (id) => {
   if (!isLocked(id) && !isHidden(id)) {
     editorStore.selectElement(id)
@@ -328,6 +303,16 @@ const toggleLock = (id) => {
 }
 
 const duplicateLayer = (id) => {
+  if (isLocked(id)) {
+    $q.notify({
+      message: 'Cannot duplicate locked layer',
+      color: 'warning',
+      icon: 'lock',
+      position: 'top',
+    })
+    return
+  }
+
   editorStore.duplicateElement(id)
   forceCanvasRefresh()
   emit('layer-update')
@@ -386,7 +371,6 @@ const clearAllLayers = () => {
   })
 }
 
-// Layer Ordering
 const moveToFront = (id) => {
   editorStore.bringToFront(id)
   forceCanvasRefresh()
@@ -424,31 +408,43 @@ const handleDragEnd = () => {
   })
 }
 
-// Alignment
-const alignElement = (alignment) => {
-  editorStore.alignElements(alignment)
+const updateLayerOpacity = (id, opacity) => {
+  editorStore.updateElement(id, { opacity })
   forceCanvasRefresh()
   emit('layer-update')
+}
 
-  $q.notify({
-    message: `Aligned ${alignment}`,
-    color: 'positive',
-    icon: 'align_horizontal_center',
-    position: 'top',
-    timeout: 1000,
+const startEditingName = (layer) => {
+  editingLayerId.value = layer.id
+  editingLayerName.value = layer.name || getLayerName(layer)
+  nextTick(() => {
+    layerNameInput.value?.focus()
+    layerNameInput.value?.select()
   })
 }
 
-// Force canvas refresh by triggering Vue reactivity
+const finishEditingName = (layer) => {
+  if (editingLayerName.value.trim()) {
+    editorStore.updateElement(layer.id, { name: editingLayerName.value.trim() })
+    forceCanvasRefresh()
+    emit('layer-update')
+  }
+  editingLayerId.value = null
+  editingLayerName.value = ''
+}
+
+const cancelEditingName = () => {
+  editingLayerId.value = null
+  editingLayerName.value = ''
+}
+
 const forceCanvasRefresh = () => {
-  // Trigger reactivity by touching the store
   const currentElements = [...editorStore.elements]
   editorStore.$patch({
     elements: currentElements
   })
 }
 
-// Emits
 const emit = defineEmits(['layer-update'])
 </script>
 
@@ -479,27 +475,6 @@ const emit = defineEmits(['layer-update'])
 .layer-actions {
   display: flex;
   gap: 4px;
-}
-
-.alignment-tools {
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: #f9fafb;
-}
-
-.tool-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.tool-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: #6b7280;
-  min-width: 40px;
 }
 
 .layer-list {
@@ -628,5 +603,33 @@ const emit = defineEmits(['layer-update'])
 
 .layer-list::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+
+.layer-opacity-control {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.layer-name {
+  cursor: text;
+  user-select: none;
+}
+
+.layer-name:hover {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+.layer-name-input {
+  width: 100%;
+  padding: 2px 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  outline: none;
+  background: white;
 }
 </style>

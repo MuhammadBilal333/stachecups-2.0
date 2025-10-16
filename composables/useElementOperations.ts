@@ -134,6 +134,15 @@ export function useElementOperations() {
     const element = editorStore.elements.find(el => el.id === elementId)
     if (!element) return null
 
+    if (editorStore.isElementLocked(elementId)) {
+      $q.notify({
+        message: 'Cannot duplicate locked element',
+        color: 'warning',
+        icon: 'lock',
+      })
+      return null
+    }
+
     let newId: string
     if (element.type === 'image') {
       newId = generateImageId()

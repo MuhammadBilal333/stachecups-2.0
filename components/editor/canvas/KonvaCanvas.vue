@@ -195,16 +195,27 @@
       @move="$emit('move-element', props.selectedElementId)"
       @drag-move="handleDragMove"
     />
+
+    <!-- Snap Guides -->
+    <SnapGuides
+      :canvas-width="stageConfig.width"
+      :canvas-height="stageConfig.height"
+      :selected-element="selectedElement"
+      :other-elements="allElements"
+      :show-center-guides="true"
+      :snap-threshold="8"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import FloatingToolbar from '~/components/editor/sidebar/FloatingToolbar.vue'
 import HelperButtons from '~/components/editor/canvas/HelperButtons.vue'
 import TextFormatToolbar from '~/components/editor/sidebar/TextFormatToolbar.vue'
 import DesignElement from '~/components/editor/canvas/DesignElement.vue'
 import DrawTool from '~/components/editor/canvas/DrawTool.vue'
+import SnapGuides from '~/components/editor/canvas/SnapGuides.vue'
 import { useBackgroundStore } from '~/store/background'
 
 const props = defineProps({
@@ -251,6 +262,11 @@ const visibleImages = computed(() => {
 
 const visibleTexts = computed(() => {
   return props.texts.filter(txt => !props.hiddenElements.has(txt.id))
+});
+
+// All elements for SnapGuides
+const allElements = computed(() => {
+  return [...props.images, ...props.texts]
 });
 
 const emit = defineEmits([
@@ -547,13 +563,56 @@ const exportTexture = () => {
   if (!konvaStage) return null;
 
   try {
+    // Get dynamic layer node to temporarily hide hidden elements
+    const dynamicLayerNode = dynamicLayer.value?.getNode();
+    const staticLayerNode = staticLayer.value?.getNode();
+
+    // Store original visibility states
+    const hiddenNodesState = [];
+
+    if (dynamicLayerNode) {
+      // Find and hide all elements that are in hiddenElements set
+      dynamicLayerNode.getChildren().forEach((node) => {
+        const elementId = node.id();
+        if (elementId && props.hiddenElements.has(elementId)) {
+          hiddenNodesState.push({ node, wasVisible: node.visible() });
+          node.visible(false);
+        }
+      });
+    }
+
+    if (staticLayerNode) {
+      // Also hide looped instances of hidden elements
+      staticLayerNode.getChildren().forEach((node) => {
+        const elementId = node.id();
+        if (elementId && props.hiddenElements.has(elementId)) {
+          hiddenNodesState.push({ node, wasVisible: node.visible() });
+          node.visible(false);
+        }
+      });
+    }
+
+    // Force redraw with hidden elements
     konvaStage.batchDraw();
-    return konvaStage.toDataURL({
+
+    // Export texture
+    const textureData = konvaStage.toDataURL({
       mimeType: 'image/png',
       quality: 1,
       pixelRatio: 2
     });
+
+    // Restore original visibility states
+    hiddenNodesState.forEach(({ node, wasVisible }) => {
+      node.visible(wasVisible);
+    });
+
+    // Redraw to restore original state
+    konvaStage.batchDraw();
+
+    return textureData;
   } catch (error) {
+    console.error('Texture export error:', error);
     return null;
   }
 };
@@ -616,11 +675,41 @@ watch([
   () => props.texts,
   () => props.images.map(img => img.id).join(','),
   () => props.texts.map(txt => txt.id).join(',')
-], () => {
+], (newVals, oldVals) => {
   console.log('🔄 KonvaCanvas: Elements array changed, forcing redraw');
-  nextTick(() => {
-    scheduleBatchDraw();
-  });
+
+  // If all elements were cleared (both arrays empty)
+  if (props.images.length === 0 && props.texts.length === 0 &&
+      (oldVals[0]?.length > 0 || oldVals[1]?.length > 0)) {
+    console.log('🧹 KonvaCanvas: All elements cleared, performing deep cleanup');
+
+    // Force clear all layers
+    nextTick(() => {
+      const dynamicLayerNode = dynamicLayer.value?.getNode();
+      const staticLayerNode = staticLayer.value?.getNode();
+
+      if (dynamicLayerNode) {
+        // Destroy all children completely
+        dynamicLayerNode.destroyChildren();
+        dynamicLayerNode.batchDraw();
+      }
+
+      if (staticLayerNode) {
+        staticLayerNode.destroyChildren();
+        staticLayerNode.batchDraw();
+      }
+
+      // Force complete stage redraw
+      const stageNode = stage.value?.getStage();
+      if (stageNode) {
+        stageNode.batchDraw();
+      }
+    });
+  } else {
+    nextTick(() => {
+      scheduleBatchDraw();
+    });
+  }
 }, { deep: true });
 
 // Listen for custom background change events

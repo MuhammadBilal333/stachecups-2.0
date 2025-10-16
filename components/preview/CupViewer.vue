@@ -1,6 +1,6 @@
 <template>
-  <div class="threejs-container">
-    <div id="threejs" ref="threejsContainer"></div>
+  <div class="threejs-container ">
+    <div id="threejs" ref="threejsContainer"></div> 
     <div class="text-center text-white">Drag to rotate</div>
   </div>
 </template>

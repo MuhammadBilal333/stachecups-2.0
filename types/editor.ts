@@ -15,6 +15,9 @@ export interface DesignElement {
   width: number
   height: number
   locked?: boolean
+  opacity?: number  // 0-1, default 1 (fully opaque)
+  zIndex?: number   // Explicit z-index for layer ordering
+  name?: string     // Custom layer name for organization
 }
 
 export interface ImageElement extends DesignElement {

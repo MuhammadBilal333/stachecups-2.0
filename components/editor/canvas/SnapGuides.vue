@@ -5,10 +5,15 @@
       v-for="guide in verticalGuides"
       :key="`v-${guide.position}`"
       class="snap-guide snap-guide-vertical"
+      :class="{
+        'snap-guide-edge': guide.type === 'edge',
+        'snap-guide-element': guide.type === 'element',
+        'snap-guide-center': guide.type === 'center'
+      }"
       :style="{ left: `${guide.position}px` }"
     >
       <div class="guide-line"></div>
-      <div class="guide-label">{{ Math.round(guide.position) }}px</div>
+      <div v-if="guide.type !== 'center'" class="guide-label">{{ Math.round(guide.position) }}px</div>
     </div>
 
     <!-- Horizontal Guides -->
@@ -16,24 +21,68 @@
       v-for="guide in horizontalGuides"
       :key="`h-${guide.position}`"
       class="snap-guide snap-guide-horizontal"
+      :class="{
+        'snap-guide-edge': guide.type === 'edge',
+        'snap-guide-element': guide.type === 'element',
+        'snap-guide-center': guide.type === 'center'
+      }"
       :style="{ top: `${guide.position}px` }"
     >
       <div class="guide-line"></div>
-      <div class="guide-label">{{ Math.round(guide.position) }}px</div>
+      <div v-if="guide.type !== 'center'" class="guide-label">{{ Math.round(guide.position) }}px</div>
     </div>
 
-    <!-- Center Guides (Canvas) -->
+    <!-- Distance Measurements -->
     <div
-      v-if="showCenterGuides"
-      class="snap-guide snap-guide-vertical snap-guide-center"
+      v-for="measurement in measurements"
+      :key="`measure-${measurement.id}`"
+      class="distance-measurement"
+      :class="measurement.direction"
+      :style="{
+        left: `${measurement.x}px`,
+        top: `${measurement.y}px`,
+        width: measurement.direction === 'horizontal' ? `${measurement.length}px` : '2px',
+        height: measurement.direction === 'vertical' ? `${measurement.length}px` : '2px'
+      }"
+    >
+      <div class="measurement-line"></div>
+      <div class="measurement-label">{{ Math.round(measurement.distance) }}px</div>
+      <div class="measurement-cap measurement-cap-start"></div>
+      <div class="measurement-cap measurement-cap-end"></div>
+    </div>
+
+    <!-- Element Size Tooltip -->
+    <div
+      v-if="selectedElement && showSizeTooltip"
+      class="size-tooltip"
+      :style="{
+        left: `${sizeTooltipPosition.x}px`,
+        top: `${sizeTooltipPosition.y}px`
+      }"
+    >
+      <div class="size-info">
+        <span class="size-dimension">W: {{ Math.round(selectedElement.width * (selectedElement.scale || 1)) }}</span>
+        <span class="size-separator">×</span>
+        <span class="size-dimension">H: {{ Math.round(selectedElement.height * (selectedElement.scale || 1)) }}</span>
+      </div>
+      <div class="position-info">
+        <span class="position-coord">X: {{ Math.round(selectedElement.position.x) }}</span>
+        <span class="position-coord">Y: {{ Math.round(selectedElement.position.y) }}</span>
+      </div>
+    </div>
+
+    <!-- Center Guides (Canvas) - Always visible when element is selected -->
+    <div
+      v-if="showCenterGuides && selectedElement"
+      class="snap-guide snap-guide-vertical snap-guide-center snap-guide-persistent"
       :style="{ left: `${canvasWidth / 2}px` }"
     >
       <div class="guide-line"></div>
     </div>
 
     <div
-      v-if="showCenterGuides"
-      class="snap-guide snap-guide-horizontal snap-guide-center"
+      v-if="showCenterGuides && selectedElement"
+      class="snap-guide snap-guide-horizontal snap-guide-center snap-guide-persistent"
       :style="{ top: `${canvasHeight / 2}px` }"
     >
       <div class="guide-line"></div>
@@ -73,6 +122,115 @@ const props = defineProps({
 
 const verticalGuides = ref([])
 const horizontalGuides = ref([])
+const measurements = ref([])
+const showSizeTooltip = ref(false)
+
+// Calculate size tooltip position
+const sizeTooltipPosition = computed(() => {
+  if (!props.selectedElement) return { x: 0, y: 0 }
+
+  const element = props.selectedElement
+  const width = element.width * (element.scale || 1)
+  const height = element.height * (element.scale || 1)
+
+  // Position tooltip above element, centered
+  return {
+    x: element.position.x + width / 2,
+    y: element.position.y - 60
+  }
+})
+
+// Calculate distance measurements between elements
+const calculateMeasurements = () => {
+  if (!props.selectedElement) {
+    measurements.value = []
+    return
+  }
+
+  const newMeasurements = []
+  const selectedPos = props.selectedElement.position
+  const selectedWidth = props.selectedElement.width * (props.selectedElement.scale || 1)
+  const selectedHeight = props.selectedElement.height * (props.selectedElement.scale || 1)
+
+  const selectedLeft = selectedPos.x
+  const selectedRight = selectedPos.x + selectedWidth
+  const selectedTop = selectedPos.y
+  const selectedBottom = selectedPos.y + selectedHeight
+
+  // Find closest elements for distance measurement
+  props.otherElements.forEach((element) => {
+    if (element.id === props.selectedElement.id) return
+
+    const elemWidth = element.width * (element.scale || 1)
+    const elemHeight = element.height * (element.scale || 1)
+    const elemLeft = element.position.x
+    const elemRight = element.position.x + elemWidth
+    const elemTop = element.position.y
+    const elemBottom = element.position.y + elemHeight
+
+    // Horizontal distance measurements
+    // Selected element to the left of other element
+    if (selectedRight < elemLeft && Math.abs(selectedTop - elemTop) < 50) {
+      const distance = elemLeft - selectedRight
+      if (distance < 200) {
+        newMeasurements.push({
+          id: `h-${element.id}`,
+          direction: 'horizontal',
+          x: selectedRight,
+          y: (selectedTop + selectedBottom) / 2,
+          length: distance,
+          distance: distance
+        })
+      }
+    }
+    // Selected element to the right of other element
+    else if (selectedLeft > elemRight && Math.abs(selectedTop - elemTop) < 50) {
+      const distance = selectedLeft - elemRight
+      if (distance < 200) {
+        newMeasurements.push({
+          id: `h-${element.id}`,
+          direction: 'horizontal',
+          x: elemRight,
+          y: (selectedTop + selectedBottom) / 2,
+          length: distance,
+          distance: distance
+        })
+      }
+    }
+
+    // Vertical distance measurements
+    // Selected element above other element
+    if (selectedBottom < elemTop && Math.abs(selectedLeft - elemLeft) < 50) {
+      const distance = elemTop - selectedBottom
+      if (distance < 200) {
+        newMeasurements.push({
+          id: `v-${element.id}`,
+          direction: 'vertical',
+          x: (selectedLeft + selectedRight) / 2,
+          y: selectedBottom,
+          length: distance,
+          distance: distance
+        })
+      }
+    }
+    // Selected element below other element
+    else if (selectedTop > elemBottom && Math.abs(selectedLeft - elemLeft) < 50) {
+      const distance = selectedTop - elemBottom
+      if (distance < 200) {
+        newMeasurements.push({
+          id: `v-${element.id}`,
+          direction: 'vertical',
+          x: (selectedLeft + selectedRight) / 2,
+          y: elemBottom,
+          length: distance,
+          distance: distance
+        })
+      }
+    }
+  })
+
+  measurements.value = newMeasurements
+}
 
 // Calculate snap guide positions
 const calculateGuides = () => {
@@ -202,6 +360,8 @@ watch(
   () => [props.selectedElement, props.otherElements],
   () => {
     calculateGuides()
+    calculateMeasurements()
+    showSizeTooltip.value = !!props.selectedElement
   },
   { deep: true, immediate: true }
 )
@@ -326,9 +486,28 @@ defineExpose({
   box-shadow: 0 0 4px rgba(59, 130, 246, 0.5);
 }
 
+/* Edge guides - Blue */
+.snap-guide-edge .guide-line {
+  background: #3b82f6;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
+}
+
+/* Element guides - Pink/Magenta */
+.snap-guide-element .guide-line {
+  background: #ec4899;
+  box-shadow: 0 0 6px rgba(236, 72, 153, 0.6);
+}
+
+/* Center guides - Purple */
 .snap-guide-center .guide-line {
   background: #8b5cf6;
   box-shadow: 0 0 4px rgba(139, 92, 246, 0.5);
+}
+
+/* Persistent center guides (slightly transparent) */
+.snap-guide-persistent .guide-line {
+  background: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 0 2px rgba(139, 92, 246, 0.3);
 }
 
 .guide-label {
@@ -357,6 +536,128 @@ defineExpose({
   background: #8b5cf6;
 }
 
+.snap-guide-element .guide-label {
+  background: #ec4899;
+}
+
+/* Distance Measurements */
+.distance-measurement {
+  position: absolute;
+  pointer-events: none;
+  animation: guideFadeIn 0.2s ease-out;
+}
+
+.measurement-line {
+  width: 100%;
+  height: 100%;
+  background: #f59e0b;
+  position: relative;
+}
+
+.measurement-label {
+  position: absolute;
+  background: #f59e0b;
+  color: white;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+  z-index: 10;
+}
+
+.distance-measurement.horizontal .measurement-label {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.distance-measurement.vertical .measurement-label {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center;
+}
+
+.measurement-cap {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #f59e0b;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.distance-measurement.horizontal .measurement-cap-start {
+  left: 0;
+  top: 50%;
+}
+
+.distance-measurement.horizontal .measurement-cap-end {
+  left: 100%;
+  top: 50%;
+}
+
+.distance-measurement.vertical .measurement-cap-start {
+  left: 50%;
+  top: 0;
+}
+
+.distance-measurement.vertical .measurement-cap-end {
+  left: 50%;
+  top: 100%;
+}
+
+/* Size and Position Tooltip */
+.size-tooltip {
+  position: absolute;
+  background: rgba(17, 24, 39, 0.95);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 2000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  animation: tooltipFadeIn 0.2s ease-out;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.size-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.size-dimension {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #60a5fa;
+}
+
+.size-separator {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
+.position-info {
+  display: flex;
+  gap: 12px;
+}
+
+.position-coord {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #a78bfa;
+}
+
 @keyframes guideFadeIn {
   from {
     opacity: 0;
@@ -365,6 +666,17 @@ defineExpose({
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 }
 </style>

@@ -74,9 +74,7 @@ export const useEditorStore = defineStore('editor', {
   },
 
   actions: {
-    // Element Management
     addElement(element: AnyElement) {
-      // Ensure element has valid position and defaults
       if (!element.position || typeof element.position.x !== 'number' || typeof element.position.y !== 'number') {
         element.position = { x: 100, y: 100 }
       }
@@ -85,6 +83,12 @@ export const useEditorStore = defineStore('editor', {
       }
       if (typeof element.rotation !== 'number') {
         element.rotation = 0
+      }
+      if (typeof element.zIndex !== 'number') {
+        element.zIndex = this.elements.length
+      }
+      if (typeof element.opacity !== 'number') {
+        element.opacity = 1
       }
 
       this.elements.push(element)
@@ -110,6 +114,8 @@ export const useEditorStore = defineStore('editor', {
       const element = this.elements.find((el) => el.id === id)
       if (!element) return
 
+      if (this.lockedElements.has(id)) return
+
       const newElement: AnyElement = {
         ...element,
         id: generateElementId(element.type),
@@ -128,7 +134,6 @@ export const useEditorStore = defineStore('editor', {
       this.lockedElements.clear()
     },
 
-    // Selection
     selectElement(id: string | null) {
       this.selectedElementId = id
     },
@@ -137,7 +142,6 @@ export const useEditorStore = defineStore('editor', {
       this.selectedElementId = null
     },
 
-    // Locking
     toggleLock(id: string) {
       if (this.lockedElements.has(id)) {
         this.lockedElements.delete(id)
@@ -154,122 +158,121 @@ export const useEditorStore = defineStore('editor', {
       this.lockedElements.delete(id)
     },
 
-    // Visibility
     toggleVisibility(id: string) {
       if (this.hiddenElements.has(id)) {
         this.hiddenElements.delete(id)
       } else {
         this.hiddenElements.add(id)
-        // Deselect if hiding selected element
-        if (this.selectedElementId === id) {
-          this.selectedElementId = null
-        }
       }
     },
 
     hideElement(id: string) {
       this.hiddenElements.add(id)
-      if (this.selectedElementId === id) {
-        this.selectedElementId = null
-      }
     },
 
     showElement(id: string) {
       this.hiddenElements.delete(id)
     },
 
-    // Layer Reordering
     moveElementToIndex(id: string, newIndex: number) {
-      const currentIndex = this.elements.findIndex((el) => el.id === id)
-      if (currentIndex === -1) return
+      const element = this.elements.find((el) => el.id === id)
+      if (!element) return
 
-      const element = this.elements[currentIndex]
-      const newElements = [...this.elements]
-      newElements.splice(currentIndex, 1)
-      newElements.splice(newIndex, 0, element)
-      this.elements = newElements
+      element.zIndex = newIndex
     },
 
     bringToFront(id: string) {
-      const index = this.elements.findIndex((el) => el.id === id)
-      if (index === -1 || index === this.elements.length - 1) return
+      const element = this.elements.find((el) => el.id === id)
+      if (!element) return
 
-      const element = this.elements[index]
-      const newElements = [...this.elements]
-      newElements.splice(index, 1)
-      newElements.push(element)
-      this.elements = newElements
+      const maxZIndex = Math.max(...this.elements.map(el => el.zIndex ?? 0))
+      element.zIndex = maxZIndex + 1
     },
 
     sendToBack(id: string) {
-      const index = this.elements.findIndex((el) => el.id === id)
-      if (index === -1 || index === 0) return
+      const element = this.elements.find((el) => el.id === id)
+      if (!element) return
 
-      const element = this.elements[index]
-      const newElements = [...this.elements]
-      newElements.splice(index, 1)
-      newElements.unshift(element)
-      this.elements = newElements
+      const minZIndex = Math.min(...this.elements.map(el => el.zIndex ?? 0))
+      element.zIndex = minZIndex - 1
     },
 
     moveUp(id: string) {
-      const index = this.elements.findIndex((el) => el.id === id)
-      if (index === -1 || index === this.elements.length - 1) return
+      const element = this.elements.find((el) => el.id === id)
+      if (!element) return
 
-      const element = this.elements[index]
-      const newElements = [...this.elements]
-      newElements.splice(index, 1)
-      newElements.splice(index + 1, 0, element)
-      this.elements = newElements
+      const currentZ = element.zIndex ?? 0
+      const higherElements = this.elements
+        .filter(el => (el.zIndex ?? 0) > currentZ)
+        .sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0))
+
+      if (higherElements.length > 0) {
+        const nextElement = higherElements[0]
+        const tempZ = element.zIndex
+        element.zIndex = nextElement.zIndex
+        nextElement.zIndex = tempZ
+      }
     },
 
     moveDown(id: string) {
-      const index = this.elements.findIndex((el) => el.id === id)
-      if (index === -1 || index === 0) return
+      const element = this.elements.find((el) => el.id === id)
+      if (!element) return
 
-      const element = this.elements[index]
-      const newElements = [...this.elements]
-      newElements.splice(index, 1)
-      newElements.splice(index - 1, 0, element)
-      this.elements = newElements
+      const currentZ = element.zIndex ?? 0
+      const lowerElements = this.elements
+        .filter(el => (el.zIndex ?? 0) < currentZ)
+        .sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0))
+
+      if (lowerElements.length > 0) {
+        const nextElement = lowerElements[0]
+        const tempZ = element.zIndex
+        element.zIndex = nextElement.zIndex
+        nextElement.zIndex = tempZ
+      }
     },
 
-    // Alignment
     alignElements(alignment: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') {
       const selectedId = this.selectedElementId
       if (!selectedId) return
 
-      const element = this.elements.find((el) => el.id === selectedId)
-      if (!element) return
+      const elementIndex = this.elements.findIndex((el) => el.id === selectedId)
+      if (elementIndex === -1) return
 
+      const element = this.elements[elementIndex]
       const canvasWidth = this.canvasWidth
       const canvasHeight = this.canvasHeight
       const elementWidth = element.width * (element.scale || 1)
       const elementHeight = element.height * (element.scale || 1)
 
+      let newX = element.position.x
+      let newY = element.position.y
+
       switch (alignment) {
         case 'left':
-          element.position.x = 0
+          newX = elementWidth / 2
           break
         case 'center':
-          element.position.x = (canvasWidth - elementWidth) / 2
+          newX = canvasWidth / 2
           break
         case 'right':
-          element.position.x = canvasWidth - elementWidth
+          newX = canvasWidth - (elementWidth / 2)
           break
         case 'top':
-          element.position.y = 0
+          newY = elementHeight / 2
           break
         case 'middle':
-          element.position.y = (canvasHeight - elementHeight) / 2
+          newY = canvasHeight / 2
           break
         case 'bottom':
-          element.position.y = canvasHeight - elementHeight
+          newY = canvasHeight - (elementHeight / 2)
           break
       }
+
+      this.updateElement(selectedId, {
+        position: { x: newX, y: newY }
+      })
     },
 
-    // Tools
     setTool(tool: 'select' | 'text' | 'draw' | null) {
       this.currentTool = tool
       this.drawMode = tool === 'draw'
@@ -296,22 +299,18 @@ export const useEditorStore = defineStore('editor', {
       }
     },
 
-    // Draw Options
     updateDrawOptions(options: Partial<DrawToolOptions>) {
       this.drawOptions = { ...this.drawOptions, ...options }
     },
 
-    // Text Options
     updateTextOptions(options: Partial<TextToolOptions>) {
       this.textOptions = { ...this.textOptions, ...options }
     },
 
-    // View Mode
     setViewMode(mode: ViewMode) {
       this.viewMode = mode
     },
 
-    // Product Configuration
     setProduct(type: string, size: string, width: number, height: number) {
       this.cupType = type
       this.cupSize = size
@@ -319,9 +318,7 @@ export const useEditorStore = defineStore('editor', {
       this.canvasHeight = height
     },
 
-    // State Management
     setState(state: { elements: AnyElement[]; selectedElementId: string | null }) {
-      // Ensure all elements have valid positions when restoring state
       this.elements = state.elements.map(el => {
         if (!el.position || typeof el.position.x !== 'number' || typeof el.position.y !== 'number') {
           el.position = { x: 100, y: 100 }

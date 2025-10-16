@@ -1,80 +1,103 @@
 <template>
-  <div class="pattern-picker-container">
+  <div class="bg-white rounded-lg h-full flex flex-col overflow-hidden">
     <!-- Search Bar -->
-    <div class="q-px-md q-pt-xs q-pb-sm">
+    <div class="px-4 pt-1 pb-2">
       <q-input
         v-model="searchQuery"
         outlined
         dense
         placeholder="Search patterns..."
         clearable
-        class="search-input"
         borderless
-      >
-      
-      </q-input>
+        class="bg-gray-100 rounded-md [&_.q-field__control]:bg-gray-100 [&_.q-field__control]:h-9 [&_.q-field__native]:text-sm"
+      />
     </div>
 
     <!-- Category Tabs -->
-<q-tabs
-  v-model="selectedCategory"
-  dense
-  class="text-grey q-px-md flex flex-wrap max-w-[300px] overflow-scroll"
-  active-color="primary"
-  indicator-color="primary"
-  align="left"
-  no-caps
-  scrollable="true"
->
-  <q-tab
-    v-for="category in backgroundStore.patternCategories"
-    :key="category"
-    :name="category"
-    :label="category"
-  />
-</q-tabs>
+    <q-tabs
+      v-model="selectedCategory"
+      dense
+      class="text-gray-500 px-4 flex flex-wrap  w-full lg:max-w-[300px] overflow-x-auto"
+      active-color="primary"
+      indicator-color="primary"
+      align="left"
+      no-caps
+      scrollable="true"
+    >
+      <q-tab
+        v-for="category in backgroundStore.patternCategories"
+        :key="category"
+        :name="category"
+        :label="category"
+      />
+    </q-tabs>
 
     <q-separator />
 
-    <!-- Pattern Grid -->
-    <div class="pattern-grid-container">
-      <div v-if="filteredPatterns.length === 0" class="text-center text-grey q-py-lg">
+    <!-- Pattern Grid (scrollable) -->
+     <div class="overflow-x-hidden  px-3 py-2">
+
+    <div class="overflow-x-hidden ">
+      <div v-if="filteredPatterns.length === 0" class="text-center text-gray-500 py-8">
         <q-icon name="sentiment_dissatisfied" size="36px" />
-        <div class="q-mt-sm text-caption">No patterns found</div>
+        <div class="mt-1 text-xs">No patterns found</div>
       </div>
 
-      <div v-else class="pattern-grid">
+      <div v-else class=" grid grid-cols-2 sm:grid-cols-3 overflow-y-scroll md:grid-cols-4 lg:grid-cols-2 gap-3 pb-2  w-full">
         <div
           v-for="pattern in filteredPatterns"
           :key="pattern.id"
-          class="pattern-card"
-          :class="{ 'selected': isSelected(pattern) }"
           @click="selectPattern(pattern)"
+          :class="[
+            'cursor-pointer rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md',
+            isSelected(pattern)
+              ? 'border-primary shadow-[0_0_0_2px_rgba(124,58,237,0.15)]'
+              : ''
+          ]"
         >
-          <div class="pattern-preview" :style="{ backgroundImage: `url(${pattern.preview})` }">
+          <div
+            class="w-full aspect-square bg-center bg-repeat bg-[length:50%] flex items-center justify-center relative"
+            :style="{ backgroundImage: `url(${pattern.preview})` }"
+          >
             <q-icon
               v-if="isSelected(pattern)"
               name="check_circle"
               color="primary"
               size="18px"
-              class="check-icon"
+              class="bg-white rounded-full p-[2px]"
             />
           </div>
-          <div class="pattern-name">{{ pattern.name }}</div>
+          <div
+            :class="[
+              'px-1.5 py-1 text-center text-[10px] leading-3 border-t border-gray-100 truncate',
+              isSelected(pattern)
+                ? 'text-primary font-semibold bg-purple-50'
+                : 'text-gray-500 bg-white'
+            ]"
+          >
+            {{ pattern.name }}
+          </div>
         </div>
       </div>
     </div>
 
-    <q-separator />
 
-    <!-- Custom Pattern Options (if pattern selected) -->
-    <div v-if="backgroundStore.selectedPattern" class="q-px-md q-py-sm">
-      <div class="text-caption text-grey-7 q-mb-xs" style="font-size: 11px; font-weight: 600;">Customize Pattern</div>
 
-      <!-- Opacity Slider -->
+    <!-- Custom Pattern Options -->
+    <div
+      v-if="backgroundStore.selectedPattern"
+      class="px-4 py-2 border-t border-gray-100"
+    >
+      <div class="text-[11px] text-gray-600 font-semibold mb-1">
+        Customize Pattern
+      </div>
+
       <div>
-        <div class="text-caption text-grey-7 q-mb-xs" style="font-size: 11px;">
-          Opacity: <span class="text-primary text-weight-medium">{{ Math.round(opacity * 100) }}%</span>
+        <div class="text-[11px] text-gray-600 mb-1">
+          Opacity:
+          <span class="text-primary font-medium">{{
+            Math.round(opacity * 100)
+          }}%</span>
         </div>
         <q-slider
           v-model="opacity"
@@ -87,15 +110,18 @@
       </div>
     </div>
 
-    <q-separator />
+ 
 
-    <!-- Clear Pattern -->
-    <div v-if="backgroundStore.selectedPattern" class="q-px-md q-pb-sm q-pt-xs">
+    <!-- Remove Pattern -->
+    <div
+      v-if="backgroundStore.selectedPattern"
+      class="px-4 pb-3 pt-1 border-t border-gray-100"
+    >
       <q-btn
         flat
         color="negative"
         label="Remove Pattern"
-        class="full-width"
+        class="w-full"
         icon="close"
         size="sm"
         no-caps
@@ -103,7 +129,10 @@
       />
     </div>
   </div>
+
+  </div>
 </template>
+
 
 <script setup lang="ts">
 import { useBackgroundStore } from '~/store/background'
@@ -200,124 +229,4 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.pattern-picker-container {
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.search-input {
-  background: #f5f5f5;
-  border-radius: 8px;
-}
-
-.search-input :deep(.q-field__control) {
-  background: #f5f5f5;
-  border-radius: 8px;
-  height: 36px;
-}
-
-.search-input :deep(.q-field__native) {
-  padding-left: 4px;
-  font-size: 13px;
-}
-
-.pattern-grid-container {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 0;
-  padding: 8px 12px;
-}
-
-.pattern-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  width: 100%;
-}
-
-.pattern-card {
-  cursor: pointer;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1.5px solid #e5e7eb;
-  transition: all 0.15s ease;
-  background: white;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  width: 100%;
-  max-width: 100%;
-}
-
-.pattern-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
-  border-color: #7c3aed;
-}
-
-.pattern-card.selected {
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15);
-}
-
-.pattern-preview {
-  width: 100%;
-  aspect-ratio: 1;
-  background-size: 50%;
-  background-repeat: repeat;
-  background-position: center;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.check-icon {
-  background: white;
-  border-radius: 50%;
-  padding: 2px;
-}
-
-.pattern-name {
-  padding: 4px 6px;
-  text-align: center;
-  font-size: 9px;
-  color: #6b7280;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  background: white;
-  border-top: 1px solid #f3f4f6;
-  line-height: 1.2;
-}
-
-.pattern-card.selected .pattern-name {
-  color: #7c3aed;
-  font-weight: 600;
-  background: #faf5ff;
-}
-
-/* Better scrollbar */
-.pattern-grid-container::-webkit-scrollbar {
-  width: 5px;
-}
-
-.pattern-grid-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.pattern-grid-container::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
-}
-
-.pattern-grid-container::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
-}
-</style>
 

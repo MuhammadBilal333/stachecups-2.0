@@ -12,6 +12,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",
     "@aws-sdk/s3-request-presigner": "^3.758.0",
+    "@emoji-mart/data": "^1.2.1",
     "@nuxtjs/google-fonts": "^3.2.0",
     "@pinia/nuxt": "^0.11.2",
     "@quasar/extras": "^1.16.17",
@@ -19,6 +20,7 @@
     "@vueuse/core": "^13.9.0",
     "axios": "^1.8.3",
     "chroma-js": "^3.1.2",
+    "emoji-mart-vue-fast": "^15.0.2",
     "konva": "^10.0.2",
     "lodash-es": "^4.17.21",
     "lucide-vue-next": "^0.545.0",

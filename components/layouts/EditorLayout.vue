@@ -32,10 +32,6 @@
   min-height: 100vh;
 }
 
-.editor-content {
-  position: relative;
-  margin-left: 80px; /* Sidebar width */
-}
 
 @media (max-width: 768px) {
   .editor-content {
