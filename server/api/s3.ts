@@ -25,7 +25,6 @@ export default defineEventHandler(async (event) => {
     try {
         return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
     } catch (err) {
-        console.error('Error creating signed URL', err);
         throw err;
     }
 });

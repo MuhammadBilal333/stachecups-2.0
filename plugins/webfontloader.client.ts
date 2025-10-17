@@ -51,11 +51,10 @@ export default defineNuxtPlugin(() => {
       }
     },
     inactive: () => {
-      console.warn('⚠️ Some fonts failed to load')
       fontsLoading.value = false
     },
     fontinactive: (familyName: string, fvd: string) => {
-      console.warn(`❌ Font failed to load: ${familyName}`)
+      // Font failed to load
     }
   })
 

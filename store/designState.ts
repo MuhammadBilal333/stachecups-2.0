@@ -82,8 +82,6 @@ export const useDesignStateStore = defineStore('designState', {
      * Capture current design state from all stores with deep cloning
      */
     captureCurrentState(): DesignState {
-      console.log('📸 Capturing current design state...')
-
       const editorStore = useEditorStore()
       const productStore = useProductStore()
       const backgroundStore = useBackgroundStore()
@@ -108,13 +106,6 @@ export const useDesignStateStore = defineStore('designState', {
         hiddenElements: Array.from(editorStore.hiddenElements),
       }
 
-      console.log('✅ State captured:', {
-        version: state.version,
-        elements: state.elements.length,
-        hasBackground: !!state.background && state.background.type !== 'none',
-        product: `${state.product.type} ${state.product.size}`,
-      })
-
       return state
     },
 
@@ -126,7 +117,6 @@ export const useDesignStateStore = defineStore('designState', {
         DesignStateSchema.parse(state)
         return true
       } catch (error) {
-        console.error('❌ Invalid design state:', error)
         return false
       }
     },
@@ -136,17 +126,8 @@ export const useDesignStateStore = defineStore('designState', {
      */
     async restoreState(designState: DesignState): Promise<boolean> {
       try {
-        console.log('🔄 Starting restore with validated state')
-        console.log('📊 State details:', {
-          version: designState.version,
-          elements: designState.elements.length,
-          background: designState.background?.type || 'none',
-          product: `${designState.product.type} ${designState.product.size}`,
-        })
-
         // Validate state structure
         if (!this.validateState(designState)) {
-          console.error('❌ State validation failed')
           return false
         }
 
@@ -155,77 +136,57 @@ export const useDesignStateStore = defineStore('designState', {
         const backgroundStore = useBackgroundStore()
 
         // Step 1: Restore product first (affects canvas dimensions)
-        console.log('📦 Step 1: Restoring product...')
         productStore.setProduct({
           type: designState.product.type,
           size: designState.product.size,
           width: designState.product.width,
           height: designState.product.height,
         })
-        console.log('✅ Product restored')
 
         // Step 2: Clear existing elements
-        console.log('🧹 Step 2: Clearing existing elements...')
         editorStore.clearElements()
-        console.log('✅ Elements cleared')
 
         // Step 3: Restore background
-        console.log('🎨 Step 3: Restoring background...')
         if (designState.background && designState.background.type !== 'none') {
           const bg = designState.background
 
           if (bg.type === 'solid' && bg.solidColor) {
-            console.log(`  → Setting solid color: ${bg.solidColor}`)
             backgroundStore.setSolidColor(bg.solidColor, false)
           } else if (bg.type === 'pattern' && bg.pattern) {
-            console.log(`  → Setting pattern: ${bg.pattern.name}`)
             backgroundStore.setPattern(bg.pattern)
           } else if (bg.type === 'image' && bg.imageUrl) {
-            console.log(`  → Setting image: ${bg.imageUrl}`)
             backgroundStore.setImageBackground(bg.imageUrl)
           }
 
           if (bg.opacity !== undefined && bg.opacity !== 1) {
-            console.log(`  → Setting opacity: ${bg.opacity}`)
             backgroundStore.setOpacity(bg.opacity)
           }
         } else {
-          console.log('  → Clearing background')
           backgroundStore.clearBackground()
         }
-        console.log('✅ Background restored')
 
         // Step 4: Restore elements with deep clone
-        console.log('📝 Step 4: Restoring elements...')
         const elementsToRestore = cloneDeep(designState.elements)
 
-        console.log(`  → Processing ${elementsToRestore.length} elements`)
         for (const element of elementsToRestore) {
           // Ensure required properties
           element.position = element.position || { x: 100, y: 100 }
           element.scale = element.scale ?? 1
           element.rotation = element.rotation ?? 0
 
-          console.log(`  ✓ ${element.type} [${element.id}] at (${element.position.x}, ${element.position.y})`)
-
           // Add to store
           editorStore.addElement(element)
         }
-        console.log(`✅ ${elementsToRestore.length} elements restored`)
 
         // Step 5: Restore selection
-        console.log('🎯 Step 5: Restoring selection...')
         editorStore.selectElement(designState.selectedElementId)
-        console.log(`  → Selected: ${designState.selectedElementId || 'none'}`)
 
         // Step 6: Restore locked/hidden states
-        console.log('🔒 Step 6: Restoring locked/hidden states...')
         editorStore.lockedElements.clear()
         if (designState.lockedElements) {
           designState.lockedElements.forEach(id => {
             editorStore.lockedElements.add(id)
           })
-          console.log(`  → Locked ${designState.lockedElements.length} elements`)
         }
 
         editorStore.hiddenElements.clear()
@@ -233,25 +194,14 @@ export const useDesignStateStore = defineStore('designState', {
           designState.hiddenElements.forEach(id => {
             editorStore.hiddenElements.add(id)
           })
-          console.log(`  → Hidden ${designState.hiddenElements.length} elements`)
         }
-        console.log('✅ States restored')
 
         // Update hash
         this.lastSaveHash = this.getStateHash()
         this.hasUnsavedChanges = false
 
-        console.log('✅ RESTORE COMPLETE - All steps finished')
-        console.log('📊 Final check:', {
-          elementsInStore: editorStore.elements.length,
-          selectedId: editorStore.selectedElementId,
-          background: backgroundStore.backgroundType,
-        })
-
         return true
       } catch (error) {
-        console.error('❌ RESTORE FAILED:', error)
-        console.error('Stack:', error instanceof Error ? error.stack : 'No stack')
         return false
       }
     },
@@ -289,7 +239,6 @@ export const useDesignStateStore = defineStore('designState', {
 
         // Don't save empty designs
         if (editorStore.elements.length === 0) {
-          console.log('📭 Skipping save - no elements')
           return true
         }
 
@@ -303,17 +252,9 @@ export const useDesignStateStore = defineStore('designState', {
 
         // Validate before saving
         if (!this.validateState(state)) {
-          console.error('❌ Cannot save - invalid state')
           this.isSaving = false
           return false
         }
-
-        console.log('💾 Saving to localStorage:', {
-          elements: state.elements.length,
-          background: state.background?.type || 'none',
-          product: `${state.product.type} ${state.product.size}`,
-          size: JSON.stringify(state).length + ' bytes',
-        })
 
         localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(state))
 
@@ -322,10 +263,8 @@ export const useDesignStateStore = defineStore('designState', {
         this.hasUnsavedChanges = false
         this.isSaving = false
 
-        console.log('✅ Save complete')
         return true
       } catch (error) {
-        console.error('❌ Save failed:', error)
         this.isSaving = false
         return false
       }
@@ -338,37 +277,24 @@ export const useDesignStateStore = defineStore('designState', {
       try {
         const saved = localStorage.getItem(AUTOSAVE_KEY)
         if (!saved) {
-          console.log('📭 No saved design in localStorage')
           return null
         }
 
-        console.log('📬 Loading from localStorage...')
         const state = JSON.parse(saved)
 
         // Validate structure
         if (!this.validateState(state)) {
-          console.warn('⚠️ Invalid saved state - clearing localStorage')
           this.clearLocalStorage()
           return null
         }
 
         // Check version compatibility
         if (state.version !== DESIGN_VERSION) {
-          console.warn(`⚠️ Version mismatch: saved=${state.version}, current=${DESIGN_VERSION}`)
           // Could add migration logic here
         }
 
-        console.log('✅ Loaded design:', {
-          version: state.version,
-          elements: state.elements.length,
-          background: state.background?.type || 'none',
-          timestamp: new Date(state.timestamp).toLocaleString(),
-        })
-
         return state
       } catch (error) {
-        console.error('❌ Load failed:', error)
-        console.warn('⚠️ Clearing corrupt localStorage data')
         this.clearLocalStorage()
         return null
       }
@@ -378,7 +304,6 @@ export const useDesignStateStore = defineStore('designState', {
      * Clear localStorage
      */
     clearLocalStorage() {
-      console.log('🧹 Clearing localStorage')
       localStorage.removeItem(AUTOSAVE_KEY)
       this.lastSaveHash = ''
       this.hasUnsavedChanges = false
@@ -393,7 +318,6 @@ export const useDesignStateStore = defineStore('designState', {
 
         // Validate before encoding
         if (!this.validateState(state)) {
-          console.error('❌ Cannot generate link - invalid state')
           return ''
         }
 
@@ -405,14 +329,8 @@ export const useDesignStateStore = defineStore('designState', {
 
         const link = `${baseUrl}${path}?design=${encoded}`
 
-        console.log('🔗 Generated shareable link:', {
-          size: encoded.length + ' characters',
-          elements: state.elements.length,
-        })
-
         return link
       } catch (error) {
-        console.error('❌ Failed to generate link:', error)
         return ''
       }
     },
@@ -429,22 +347,18 @@ export const useDesignStateStore = defineStore('designState', {
 
         if (!designParam) return false
 
-        console.log('🔗 Loading from URL parameter...')
-
         // Decode
         const json = decodeURIComponent(escape(atob(designParam)))
         const state = JSON.parse(json)
 
         // Validate
         if (!this.validateState(state)) {
-          console.error('❌ Invalid URL design state')
           return false
         }
 
         // Restore
         return this.restoreState(state) as unknown as boolean
       } catch (error) {
-        console.error('❌ Failed to load from URL:', error)
         return false
       }
     },
@@ -454,8 +368,6 @@ export const useDesignStateStore = defineStore('designState', {
      */
     startAutosave() {
       if (!this.autosaveEnabled) return
-
-      console.log('🚀 Starting autosave (every 3 seconds)...')
 
       // Clear any existing timer
       this.stopAutosave()
@@ -477,7 +389,6 @@ export const useDesignStateStore = defineStore('designState', {
       if (this.autosaveTimer) {
         clearInterval(this.autosaveTimer)
         this.autosaveTimer = null
-        console.log('⏹️ Autosave stopped')
       }
     },
 
@@ -496,8 +407,6 @@ export const useDesignStateStore = defineStore('designState', {
       link.click()
 
       URL.revokeObjectURL(url)
-
-      console.log('💾 Design exported as JSON')
     },
 
     /**
@@ -514,7 +423,6 @@ export const useDesignStateStore = defineStore('designState', {
 
         return this.restoreState(state)
       } catch (error) {
-        console.error('❌ Import failed:', error)
         return false
       }
     },
@@ -523,8 +431,6 @@ export const useDesignStateStore = defineStore('designState', {
      * Create a new blank design
      */
     createNewDesign() {
-      console.log('🆕 Creating new design...')
-
       const editorStore = useEditorStore()
       const backgroundStore = useBackgroundStore()
 
@@ -535,8 +441,6 @@ export const useDesignStateStore = defineStore('designState', {
       this.clearLocalStorage()
       this.lastSaveHash = this.getStateHash()
       this.hasUnsavedChanges = false
-
-      console.log('✅ New design created')
     },
   },
 })

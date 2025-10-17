@@ -131,7 +131,7 @@ export const useBackgroundStore = defineStore('background', {
         this.setBackgroundType('solid', userInitiated)
         this.addToRecentColors(this.solidColor)
       } catch (error) {
-        console.error('Invalid color:', color)
+        // Invalid color
       }
     },
 

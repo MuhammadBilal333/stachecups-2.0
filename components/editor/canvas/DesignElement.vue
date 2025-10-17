@@ -586,11 +586,12 @@ const textConfig = computed(() => {
 });
 
 const konvaTextEditorStyle = computed(() => {
-  if (!konvaTextRef.value) return { display: 'none' };
-  
-  const textNode = konvaTextRef.value.getNode();
-  const stage = textNode?.getStage();
-  if (!stage || !textNode) return { display: 'none' };
+  if (!konvaTextRef.value || !konvaTextRef.value.getNode) return { display: 'none' };
+
+  try {
+    const textNode = konvaTextRef.value.getNode();
+    const stage = textNode?.getStage();
+    if (!stage || !textNode) return { display: 'none' };
   
   const container = stage.container();
   const containerRect = container.getBoundingClientRect();
@@ -627,6 +628,10 @@ const konvaTextEditorStyle = computed(() => {
     lineHeight: textNode.lineHeight(),
     textAlign: textNode.align()
   };
+  } catch (error) {
+    // Silently handle Konva ref errors
+    return { display: 'none' };
+  }
 });
 
 const handleClick = (e) => {

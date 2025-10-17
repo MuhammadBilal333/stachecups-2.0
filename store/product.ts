@@ -33,7 +33,6 @@ export const useProductStore = defineStore('product', {
       const dimensions = getProductDimensions(type, size)
 
       if (!dimensions) {
-        console.error(`Product not found: ${type} ${size}`)
         return false
       }
 

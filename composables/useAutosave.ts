@@ -59,7 +59,7 @@ export function useAutosave() {
       localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(savedDesign))
       lastSaveHash = currentHash
     } catch (error) {
-      console.error('Failed to autosave design:', error)
+      // Failed to autosave
     }
   }
 
@@ -78,7 +78,6 @@ export function useAutosave() {
 
       return design
     } catch (error) {
-      console.error('Failed to load saved design:', error)
       return null
     }
   }
@@ -92,7 +91,7 @@ export function useAutosave() {
       // Restore product first
       const productSwitched = productStore.switchProduct(design.product.type, design.product.size)
       if (!productSwitched) {
-        console.error('Failed to switch product during restore')
+        // Failed to switch product during restore
       }
 
       // Wait for product switch to complete
@@ -125,7 +124,6 @@ export function useAutosave() {
 
       return true
     } catch (error) {
-      console.error('Failed to restore design:', error)
       return false
     }
   }
@@ -213,7 +211,6 @@ export function useAutosave() {
       const baseUrl = window.location.origin
       return `${baseUrl}?design=${encoded}`
     } catch (error) {
-      console.error('Failed to generate shareable link:', error)
       return ''
     }
   }
@@ -233,7 +230,6 @@ export function useAutosave() {
       // Restore design
       return restoreDesign(design)
     } catch (error) {
-      console.error('Failed to load design from URL:', error)
       return false
     }
   }

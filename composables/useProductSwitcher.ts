@@ -44,7 +44,6 @@ export function useProductSwitcher() {
         product: productStore.currentProduct,
       }
     } catch (error) {
-      console.error('Failed to switch product:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

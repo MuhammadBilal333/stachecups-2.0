@@ -1,7 +1,7 @@
 <template>
   <div class="row">
     <div
-      class="col-xs-12 q-pa-lg"
+      class="col-xs-12 mt-20 q-pa-lg"
       :class="{ 'col-md-6': isCheckout }"
     >
       <div
@@ -46,6 +46,7 @@
           </div>
           <div>✔ Check placement and details</div>
           <div>✔ Rotate to view all angles</div>
+
           <div>✔ Love it? Add to cart and make it yours!</div>
         </div>
         <div class="q-gutter-x-md">

@@ -612,7 +612,6 @@ const exportTexture = () => {
 
     return textureData;
   } catch (error) {
-    console.error('Texture export error:', error);
     return null;
   }
 };
@@ -676,12 +675,9 @@ watch([
   () => props.images.map(img => img.id).join(','),
   () => props.texts.map(txt => txt.id).join(',')
 ], (newVals, oldVals) => {
-  console.log('🔄 KonvaCanvas: Elements array changed, forcing redraw');
-
   // If all elements were cleared (both arrays empty)
   if (props.images.length === 0 && props.texts.length === 0 &&
       (oldVals[0]?.length > 0 || oldVals[1]?.length > 0)) {
-    console.log('🧹 KonvaCanvas: All elements cleared, performing deep cleanup');
 
     // Force clear all layers
     nextTick(() => {

@@ -66,7 +66,6 @@ export function useCart() {
       // Generate high-quality PNG
       return hiddenCanvas.toDataURL('image/png', 1.0)
     } catch (error) {
-      console.error('Failed to generate preview:', error)
       throw new Error('Failed to generate preview image')
     }
   }
@@ -160,7 +159,6 @@ export function useCart() {
         cartItem,
       }
     } catch (error) {
-      console.error('Failed to add to cart:', error)
       return {
         success: false,
         errors: [error instanceof Error ? error.message : 'Unknown error'],
@@ -196,7 +194,6 @@ export function useCart() {
       link.download = `stachecups-preview-${Date.now()}.png`
       link.click()
     } catch (error) {
-      console.error('Failed to download preview:', error)
       throw error
     }
   }

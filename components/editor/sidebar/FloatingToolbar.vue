@@ -88,10 +88,10 @@ const props = defineProps({
   visible: { type: Boolean, default: false },
   elementPosition: { type: Object, default: null },
   elementSize: { type: Object, default: () => ({ width: 0, height: 0 }) },
-  elementType: { 
-    type: String, 
+  elementType: {
+    type: String,
     default: 'image',
-    validator: (value) => ['image', 'text', 'emoji'].includes(value)
+    validator: (value) => !value || ['image', 'text', 'emoji', 'monogram'].includes(value)
   },
   isLocked: { type: Boolean, default: false },
   isDrawing: { type: Boolean, default: false },
