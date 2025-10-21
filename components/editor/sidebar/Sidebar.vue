@@ -2,7 +2,7 @@
   <div>
     <div
       v-if="!isMobile"
-      class="fixed left-0 top-16 h-screen w-20 flex flex-col z-40 shadow-sm"
+      class="fixed left-0 top-16 h-[calc(100vh_-_75px)] w-20 flex flex-col z-40 shadow-sm"
     >
 
       <div class="flex-1 px-2 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
@@ -135,6 +135,59 @@
           </div>
         </div>
 
+        <div class="relative sidebar-item">
+          <button
+            class="w-full h-14 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-all duration-200"
+            :class="{ 'bg-purple-50 text-purple-700': activeMenu === 'product' }"
+            @click="toggleMenu('product')"
+          >
+            <q-icon name="mdi-cup" size="24px" :class="activeMenu === 'product' ? 'text-purple-600' : 'text-gray-600'" />
+          </button>
+          <q-tooltip anchor="center right" self="center left" :offset="[10, 0]" v-if="activeMenu !== 'product'">
+            {{ productLabel }}
+          </q-tooltip>
+
+          <div
+            v-if="activeMenu === 'product'"
+            class="fixed top-16 left-20 w-80 h-[calc(100vh-4rem)] bg-white border border-gray-200 shadow-xl z-50 flex flex-col rounded-r-lg overflow-hidden"
+          >
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+              <h3 class="text-lg font-semibold text-gray-900">Switch Product</h3>
+              <button @click="closeMenu" class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors">
+                <X class="w-5 h-5" :stroke-width="2" />
+              </button>
+            </div>
+            <div class="flex-1 overflow-y-auto px-4 py-4">
+              <div class="space-y-4">
+                <div class="text-sm text-gray-600 mb-4">Choose a different product to customize:</div>
+                
+                <div class="grid grid-cols-1 gap-3">
+                  <button
+                    v-for="product in availableProducts"
+                    :key="`${product.type}-${product.size}`"
+                    class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-all duration-200"
+                    :class="{ 'border-purple-500 bg-purple-100': isCurrentProduct(product) }"
+                    @click="selectProduct(product)"
+                  >
+                    <div class="flex items-center space-x-3">
+                      <q-icon name="mdi-cup" size="20px" class="text-gray-600" />
+                      <div class="text-left">
+                        <div class="font-medium text-gray-900">{{ product.type.charAt(0).toUpperCase() + product.type.slice(1) }}</div>
+                        <div class="text-sm text-gray-500">{{ product.size }}</div>
+                      </div>
+                    </div>
+                    <q-icon 
+                      v-if="isCurrentProduct(product)"
+                      name="check" 
+                      size="16px" 
+                      class="text-purple-600" 
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div class="relative sidebar-item">
           <button
