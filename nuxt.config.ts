@@ -1,47 +1,8 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  ssr: true,
 
-  ignore: ['stachecups-main/**'],
 
-  modules: [
-    '@pinia/nuxt',
-    'nuxt-quasar-ui',
-    '@nuxtjs/tailwindcss',
-  ],
-
-  css: [
-    '~/assets/css/tailwind.css',
-    '~/assets/css/monogram-fonts.css',
-  ],
-
-  postcss: {
-    plugins: {
-      tailwindcss: {},
-      autoprefixer: {},
-    },
-  },
-
-  tailwindcss: {
-    exposeConfig: true,
-  },
-
-  quasar: {
-    plugins: ['Loading', 'Notify', 'Dialog', 'Screen'],
-    iconSet: 'mdi-v7',
-    extras: {
-      fontIcons: ['mdi-v7', 'material-icons'],
-    },
-  },
-
-  plugins: [
-    '~/plugins/vue-konva.client.ts',
-  ],
-
-  build: {
-    transpile: ['vue3-emoji-picker'],
-  },
 
   app: {
     head: {
@@ -67,33 +28,28 @@ export default defineNuxtConfig({
     },
   },
 
-  vite: {
-    build: {
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            'three': ['three'],
-            'konva': ['vue-konva', 'konva'],
-            'quill': ['quill', '@vueup/vue-quill'],
-            'vendor': ['axios', 'uuid'],
-          },
-        },
-      },
-    },
-    optimizeDeps: {
-      include: ['vue', 'pinia', '@vueuse/core'],
+
+    quasar: {
+    plugins: ['Loading', 'Notify', 'Dialog', 'Screen'],
+    iconSet: 'mdi-v7',
+    extras: {
+      fontIcons: ['mdi-v7', 'material-icons'],
     },
   },
 
-  experimental: {
-    payloadExtraction: false,
-    renderJsonPayloads: true,
-    viewTransition: true,
-  },
-
-  nitro: {
-    compressPublicAssets: true,
-    minify: true,
-  },
-  })
   
+  css: [
+    '~/assets/css/tailwind.css',
+    '~/assets/css/monogram-fonts.css',
+  ],
+  modules: [
+    '@nuxtjs/tailwindcss',
+    '@tresjs/nuxt',
+    '@pinia/nuxt',
+    'nuxt-quasar-ui'
+  ],
+
+  plugins: [
+    '~/plugins/vue-konva.client.ts',
+  ],
+})

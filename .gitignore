@@ -17,17 +17,8 @@ logs
 .DS_Store
 .fleet
 .idea
-.vscode
-*.swp
-*.swo
-*~
-.history
-*.sublime-project
-*.sublime-workspace
 
 # Local env files
 .env
 .env.*
 !.env.example
-yarn.lockstachecups-main/
-.claude/
